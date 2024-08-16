@@ -1,0 +1,78 @@
+#!/usr/bin/env nextflow
+
+process index_host_genome {
+
+    output:
+        tuple path("host_bbmap_ref")
+
+    script:
+        """
+        # Filtering out human host reads
+        bbmap.sh -Xmx23g ref=$params.references.masked_human path="host_bbmap_ref" 2>> prepare_index.log
+        """
+    }
+
+
+process preprocess_paired_end {
+
+    input:
+        tuple val(sample_name), path(file1), path(file2)
+        path(host_bbmap_ref)
+
+    output:
+        tuple path("merged.fq.gz"), path("R1.fq.gz"), path("R2.fq.gz"), path("singleton_reads.fq.gz")
+
+    script:
+        """
+        # adapter trimming
+        bbduk.sh -Xmx1G usejni=t in=$file1 in2=$file2 out=stdout.fq \
+        refstats=adapter_trim.stats statscolumns=5 overwrite=t ref=$params.references.adapters \
+        ktrim=r k=23 mink=11 hdist=1 2>> preprocessing.log | \
+
+        # contaminant filtering
+        bbduk.sh -Xmx1G usejni=t interleaved=true overwrite=t \
+        in=stdin.fq out=stdout.fq ref=$params.references.phix \
+        k=31 hdist=1 refstats=phix.stats statscolumns=5 2>> preprocessing.log | \
+
+        # quality filtering. We also retain singleton reads that pass the filter
+        # i.e. when only one of a paired end read passes,
+        # we retain just that one in singleton_reads_qf.fq.gz
+        bbduk.sh -Xmx1G usejni=t overwrite=t interleaved=true \
+        in=stdin.fq out=stdout.fq minlength=45 qtrim=rl maq=20 maxns=1 \
+        stats=qc.stats statscolumns=5 trimq=14 outs=singleton_reads_qf.fq.gz 2>> preprocessing.log |
+
+        # Filtering out human host reads
+        bbmap.sh -Xmx23g usejni=t interleaved=true overwrite=t \
+        qin=33 minid=0.95 maxindel=3 bwr=0.16 bw=12 quickmatch fast \
+        minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=stdin.fasta \
+        out=stdout.fq 2>> removeHost.log |
+
+        # Merging overlapping paired-end reads
+        bbmerge.sh -Xmx32G interleaved=true in=stdin.fq out=merged.fq.gz \
+        outu1=R1.fq.gz outu2=R2.fq.gz minoverlap=16 usejni=t \
+        ihist=Sample1.merge.hist &> merge.log
+
+        # Filtering out human host reads for singleton reads
+        bbmap.sh -Xmx23g usejni=t threads=24 overwrite=t qin=33 minid=0.95 maxindel=3 \
+        bwr=0.16 bw=12 quickmatch fast minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 \
+        untrim=t in=singleton_reads_qf.fq.gz outu=singleton_reads.fq.gz 2>> out.rmHost.log
+        """
+    }
+
+
+workflow {
+    input_file = Channel.fromPath(params.input)
+    samples = input_file
+        .splitCsv(header: false, strip: false, limit: 1)
+
+    paired_end_samples = samples.filter( { it[2] } )
+    single_end_samples = samples.filter( { !it[2] } ).map( {row -> new Tuple (row[0], row[1])})
+
+    host_bbmap_ref = index_host_genome()
+    preprocess_paired_end(paired_end_samples, host_bbmap_ref)
+
+}
+
+workflow.onComplete {
+    println "Done!!!!!!!!!!!!"
+}

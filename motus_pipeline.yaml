@@ -1,0 +1,8 @@
+name: motus_pipeline
+channels:
+    - defaults
+    - conda-forge
+    - bioconda
+dependencies:
+    - nextflow
+    - bbmap
