@@ -3,7 +3,7 @@
 process index_host_genome {
 
     output:
-        tuple path("host_bbmap_ref")
+        path("host_bbmap_ref")
 
     script:
         """
@@ -20,7 +20,7 @@ process preprocess_paired_end {
         path(host_bbmap_ref)
 
     output:
-        tuple path("merged.fq.gz"), path("R1.fq.gz"), path("R2.fq.gz"), path("singleton_reads.fq.gz")
+        tuple val(sample_name), path("merged.fq.gz"), path("R1.fq.gz"), path("R2.fq.gz"), path("singleton_reads.fq.gz")
 
     script:
         """
@@ -42,23 +42,37 @@ process preprocess_paired_end {
         stats=qc.stats statscolumns=5 trimq=14 outs=singleton_reads_qf.fq.gz 2>> preprocessing.log
 
         # Filtering out human host reads
-        bbmap.sh -Xmx64g usejni=t interleaved=true overwrite=t \
+        bbmap.sh -Xmx24g usejni=t interleaved=true overwrite=t \
         qin=33 minid=0.95 maxindel=3 bwr=0.16 bw=12 quickmatch fast \
         minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=qf.fasta.gz \
         out=stdout.fq t=8 2>> removeHost.log |
 
         # Merging overlapping paired-end reads
-        bbmerge.sh -Xmx32G interleaved=true in=stdin.fq out=merged.fq.gz \
+        bbmerge.sh -Xmx24G interleaved=true in=stdin.fq out=merged.fq.gz \
         outu1=R1.fq.gz outu2=R2.fq.gz minoverlap=16 usejni=t \
         ihist=Sample1.merge.hist &> merge.log
 
         # Filtering out human host reads for singleton reads
-        bbmap.sh -Xmx64g usejni=t threads=24 overwrite=t qin=33 minid=0.95 maxindel=3 \
+        bbmap.sh -Xmx24g usejni=t threads=24 overwrite=t qin=33 minid=0.95 maxindel=3 \
         bwr=0.16 bw=12 quickmatch fast minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 \
         untrim=t in=singleton_reads_qf.fq.gz outu=singleton_reads.fq.gz 2>> out.rmHost.log
         """
     }
 
+process motus_paired_end {
+
+    input:
+        tuple val(sample_name), path("merged.fq.gz"), path("R1.fq.gz"), path("R2.fq.gz"), path("singleton_reads.fq.gz")
+
+    output:
+        tuple val(sample_name), path("${sample_name}.motus")
+
+    script:
+        """
+        motus profile -f  R1.fq.gz -r R2.fq.gz -s merged.fq.gz,singleton_reads.fq.gz \
+        -n $sample_name -c -k mOTU -q -p -o ${sample_name}.motus
+        """
+    }
 
 workflow {
     input_file = Channel.fromPath(params.input)
@@ -69,8 +83,8 @@ workflow {
     single_end_samples = samples.filter( { !it[2] } ).map( {row -> new Tuple (row[0], row[1])})
 
     host_bbmap_ref = index_host_genome()
-    preprocess_paired_end(paired_end_samples, host_bbmap_ref)
-
+    preprocessed_samples = preprocess_paired_end(paired_end_samples, host_bbmap_ref)
+    motus_paired_end(preprocessed_samples)
 }
 
 workflow.onComplete {
