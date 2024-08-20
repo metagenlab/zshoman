@@ -38,14 +38,14 @@ process preprocess_paired_end {
         # i.e. when only one of a paired end read passes,
         # we retain just that one in singleton_reads_qf.fq.gz
         bbduk.sh -Xmx1G usejni=t overwrite=t interleaved=true \
-        in=stdin.fq out=stdout.fq minlength=45 qtrim=rl maq=20 maxns=1 \
-        stats=qc.stats statscolumns=5 trimq=14 outs=singleton_reads_qf.fq.gz 2>> preprocessing.log |
+        in=stdin.fq out=qf.fasta.gz minlength=45 qtrim=rl maq=20 maxns=1 \
+        stats=qc.stats statscolumns=5 trimq=14 outs=singleton_reads_qf.fq.gz 2>> preprocessing.log
 
         # Filtering out human host reads
-        bbmap.sh -Xmx23g usejni=t interleaved=true overwrite=t \
+        bbmap.sh -Xmx64g usejni=t interleaved=true overwrite=t \
         qin=33 minid=0.95 maxindel=3 bwr=0.16 bw=12 quickmatch fast \
-        minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=stdin.fasta \
-        out=stdout.fq 2>> removeHost.log |
+        minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=qf.fasta.gz \
+        out=stdout.fq t=8 2>> removeHost.log |
 
         # Merging overlapping paired-end reads
         bbmerge.sh -Xmx32G interleaved=true in=stdin.fq out=merged.fq.gz \
@@ -53,7 +53,7 @@ process preprocess_paired_end {
         ihist=Sample1.merge.hist &> merge.log
 
         # Filtering out human host reads for singleton reads
-        bbmap.sh -Xmx23g usejni=t threads=24 overwrite=t qin=33 minid=0.95 maxindel=3 \
+        bbmap.sh -Xmx64g usejni=t threads=24 overwrite=t qin=33 minid=0.95 maxindel=3 \
         bwr=0.16 bw=12 quickmatch fast minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 \
         untrim=t in=singleton_reads_qf.fq.gz outu=singleton_reads.fq.gz 2>> out.rmHost.log
         """
