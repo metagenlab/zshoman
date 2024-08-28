@@ -29,7 +29,7 @@ def main():
 
     samplename = args.samplename
     seqtype = args.seqtype[:-1]
-    filtersize = 1000
+    filtersize = 500
 
     infile = args.infile
     outprefix = args.outprefix + '/' + samplename
@@ -51,7 +51,7 @@ def main():
 
     with open(f'{outprefix}.{seqtype}s.hashes', 'w') as handle:
         for (seqname, sequence, md5_fw, md5_rev, seqlen) in sequences:
-            if seqlen >= 1000:
+            if seqlen >= filtersize:
                 handle.write(f'{seqname}\t{md5_fw}\t{md5_rev}\t{seqlen}\n')
 
 
