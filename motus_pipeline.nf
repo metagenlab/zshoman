@@ -185,7 +185,8 @@ process call_genes {
 process make_gene_catalog {
 
     input:
-        tuple path(amino_acids), path(nucleotides)
+        path(amino_acids)
+        path(nucleotides)
 
     output:
         tuple path("cdhit9590")
