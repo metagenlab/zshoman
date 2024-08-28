@@ -1,8 +1,8 @@
-import Bio.SeqIO.FastaIO as FastaIO
-from Bio.Seq import Seq
 import gzip
 import hashlib
 
+import Bio.SeqIO.FastaIO as FastaIO
+from Bio.Seq import Seq
 
 
 def stream_fa(infile):
@@ -18,10 +18,6 @@ def stream_fa(infile):
         raise Exception(f'{infile} not a sequence file.')
 
 
-def rename_header(header, seqtype, sequence):
-    seqlen = len(sequence)
-    return
-
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Contig/Scaffold/Transcript filter')
@@ -32,7 +28,6 @@ def main():
     parser.add_argument('atype', type=str, help='Type of assembly, META(GENOMICS/TRANSCRIPTOMICS) or ISO(LATE)', choices=['ISO','META'], default='META')
     args = parser.parse_args()
 
-
     samplename = args.samplename
     seqtype = args.seqtype[:-1]
     filters = [0, 500, 1000]
@@ -42,7 +37,6 @@ def main():
     infile = args.infile
     outprefix = args.outprefix + '/' + samplename
     sequences = []
-
 
     for cnt, (header, sequence) in enumerate(stream_fa(infile), 1):
         sequence = sequence.upper()
@@ -62,8 +56,6 @@ def main():
         for (seqname, sequence, md5_fw, md5_rev, seqlen) in sequences:
             if seqlen >= 500:
                 handle.write(f'{seqname}\t{md5_fw}\t{md5_rev}\t{seqlen}\n')
-
-
 
 
 if __name__ == '__main__':
