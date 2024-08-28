@@ -1,7 +1,7 @@
 name: motus_pipeline
 channels:
-    - bioconda
     - conda-forge
+    - bioconda
     - defaults
 dependencies:
     - nextflow
