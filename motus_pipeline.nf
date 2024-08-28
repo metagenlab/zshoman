@@ -167,6 +167,20 @@ process get_assembly_stats {
         """
     }
 
+process call_genes {
+
+    input:
+        tuple val(sample_name), path(filtered_assembly)
+
+    output:
+        tuple val(sample_name), path("${sample_name}.faa"), path("${sample_name}.fna"), path("${sample_name}.gff")
+
+    script:
+        """
+        prodigal -a $sample_name.faa -d $sample_name.fna -f gff \
+        -o $sample_name.gff -c -q -p meta -i $filtered_assembly
+        """
+    }
 
 workflow {
     input_file = Channel.fromPath(params.input)
@@ -188,7 +202,11 @@ workflow {
     assembly = assemble_paired_end(preprocessed_paired)
 
     filtered_assembly = filter_short_contigs(assembly)
+
     assembly_stats = get_assembly_stats(filtered_assembly)
+
+    genes = call_genes(filtered_assembly)
+
 }
 
 workflow.onComplete {
