@@ -182,6 +182,28 @@ process call_genes {
         """
     }
 
+process make_gene_catalog {
+
+    input:
+        tuple path(amino_acids), path(nucleotides)
+
+    output:
+        tuple path("cdhit9590")
+
+    script:
+        """
+        mkdir cdhit9590
+        cd-hit-est -i $nucleotides -o cdhit9590/gene_catalog_cdhit9590.fasta \
+        -c 0.95 -T 20 -M 0 -G 0 -aS 0.9 -g 1 -r 1 -d 0
+
+        grep "^>" cdhit9590/gene_catalog_cdhit9590.fasta | \
+        cut -f 2 -d ">" | \
+        cut -f 1 -d " " > cdhit9590/cdhit9590.headers
+        seqtk subseq gene_catalog_all.faa cdhit9590/cdhit9590.headers > cdhit9590/gene_catalog_cdhit9590.faa
+        """
+    }
+
+
 workflow {
     input_file = Channel.fromPath(params.input)
     samples = input_file
@@ -207,6 +229,9 @@ workflow {
 
     genes = call_genes(filtered_assembly)
 
+    amino_acids = genes.collectFile( {row ->  [ "genes.faa", row[1] ]} )
+    nucleotides = genes.collectFile( {row ->  [ "genes.fna", row[2] ]} )
+    gene_catalog = make_gene_catalog(amino_acids, nucleotides)
 }
 
 workflow.onComplete {
