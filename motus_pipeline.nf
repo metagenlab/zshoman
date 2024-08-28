@@ -262,7 +262,7 @@ workflow {
     nucleotides = genes.collectFile( {row ->  [ "genes.fna", row[2] ]} )
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
 
-    aligned_reads = align_reads(gene_catalog)
+    aligned_reads = align_reads(gene_catalog, preprocessed_paired)
 }
 
 workflow.onComplete {
