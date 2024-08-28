@@ -145,11 +145,11 @@ process filter_short_contigs {
         tuple val(sample_name), path(assembly)
 
     output:
-        tuple val(sample_name), path("filtered_${sample_name}.scaffoldss.min500.fasta")
+        tuple val(sample_name), path("${sample_name}.scaffolds.min500.fasta")
 
     script:
         """
-        python $params.scaffold_filtering_script $sample_name scaffolds $assembly/scaffolds.fasta filtered_$sample_name
+        python $params.scaffold_filtering_script $sample_name scaffolds $assembly/scaffolds.fasta .
         """
     }
 
