@@ -200,7 +200,7 @@ process make_gene_catalog {
         grep "^>" cdhit9590/gene_catalog_cdhit9590.fasta | \
         cut -f 2 -d ">" | \
         cut -f 1 -d " " > cdhit9590/cdhit9590.headers
-        seqtk subseq gene_catalog_all.faa cdhit9590/cdhit9590.headers > cdhit9590/gene_catalog_cdhit9590.faa
+        seqtk subseq $amino_acids cdhit9590/cdhit9590.headers > cdhit9590/gene_catalog_cdhit9590.faa
         """
     }
 
