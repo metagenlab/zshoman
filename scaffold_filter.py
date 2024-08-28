@@ -25,14 +25,11 @@ def main():
     parser.add_argument('seqtype', type=str, help='Type of input sequence', choices=['contigs', 'scaffolds', 'transcripts'])
     parser.add_argument('infile', type=str, help='Input Sequence file. Either fasta or fasta.gz.')
     parser.add_argument('outprefix', type=str, help='Prefix for output files.')
-    parser.add_argument('atype', type=str, help='Type of assembly, META(GENOMICS/TRANSCRIPTOMICS) or ISO(LATE)', choices=['ISO','META'], default='META')
     args = parser.parse_args()
 
     samplename = args.samplename
     seqtype = args.seqtype[:-1]
-    filters = [0, 500, 1000]
-    if args.atype == 'ISO':
-        filters = [0, 200, 1000]
+    filtersize = 1000
 
     infile = args.infile
     outprefix = args.outprefix + '/' + samplename
@@ -47,14 +44,14 @@ def main():
         seqname = f'{samplename}-{seqtype}_{cnt} length={seqlen} orig={header}'
         sequences.append((seqname, sequence, md5_fw, md5_rev, seqlen))
 
-    for filtersize in filters:
-        with open(f'{outprefix}.{seqtype}s.min{filtersize}.fasta', 'w') as handle:
-            for (seqname, sequence, md5_fw, md5_rev, seqlen) in sequences:
-                if seqlen >= filtersize:
-                    handle.write(f'>{seqname}\n{sequence}\n')
+    with open(f'{outprefix}.{seqtype}s.min{filtersize}.fasta', 'w') as handle:
+        for (seqname, sequence, md5_fw, md5_rev, seqlen) in sequences:
+            if seqlen >= filtersize:
+                handle.write(f'>{seqname}\n{sequence}\n')
+
     with open(f'{outprefix}.{seqtype}s.hashes', 'w') as handle:
         for (seqname, sequence, md5_fw, md5_rev, seqlen) in sequences:
-            if seqlen >= 500:
+            if seqlen >= 1000:
                 handle.write(f'{seqname}\t{md5_fw}\t{md5_rev}\t{seqlen}\n')
 
 
