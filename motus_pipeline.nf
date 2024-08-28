@@ -149,7 +149,7 @@ process filter_short_contigs {
 
     script:
         """
-        python scaffold_filter.py $sample_name scaffolds $assembly/scaffolds.fasta filtered_$sample_name
+        python $params.scaffold_filtering_script $sample_name scaffolds $assembly/scaffolds.fasta filtered_$sample_name
         """
     }
 
