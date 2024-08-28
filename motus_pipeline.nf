@@ -189,7 +189,7 @@ process make_gene_catalog {
         path(nucleotides)
 
     output:
-        tuple path("cdhit9590")
+        path("cdhit9590")
 
     script:
         """
@@ -207,11 +207,11 @@ process make_gene_catalog {
 process align_reads {
 
     input:
-        tuple path(gene_catalog)
+        path(gene_catalog)
         tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
 
     output:
-        tuple path("cdhit9590")
+        path("cdhit9590")
 
     script:
         """
