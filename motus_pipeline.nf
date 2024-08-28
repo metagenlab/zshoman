@@ -156,14 +156,14 @@ process filter_short_contigs {
 process get_assembly_stats {
 
     input:
-        tuple val(sample_name), path(assembly)
+        tuple val(sample_name), path(filtered_assembly)
 
     output:
         tuple val(sample_name), path("${sample_name}.stats")
 
     script:
         """
-        assembly-stats -l 500 -t <(cat $assembly) > $sample_name.stats
+        assembly-stats -l 500 -t <(cat $filtered_assembly) > $sample_name.stats
         """
     }
 
