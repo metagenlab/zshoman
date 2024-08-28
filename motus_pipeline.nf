@@ -153,6 +153,20 @@ process filter_short_contigs {
         """
     }
 
+process get_assembly_stats {
+
+    input:
+        tuple val(sample_name), path(assembly)
+
+    output:
+        tuple val(sample_name), path("${sample_name}.stats")
+
+    script:
+        """
+        assembly-stats -l 500 -t <(cat $assembly) > $sample_name.stats
+        """
+    }
+
 
 workflow {
     input_file = Channel.fromPath(params.input)
@@ -174,6 +188,7 @@ workflow {
     assembly = assemble_paired_end(preprocessed_paired)
 
     filtered_assembly = filter_short_contigs(assembly)
+    assembly_stats = get_assembly_stats(filtered_assembly)
 }
 
 workflow.onComplete {
