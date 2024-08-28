@@ -163,7 +163,7 @@ process get_assembly_stats {
 
     script:
         """
-        assembly-stats -l 500 -t <(cat $filtered_assembly) > $sample_name.stats
+        assembly-stats -l 500 -t <(cat $filtered_assembly) > ${sample_name}.stats
         """
     }
 
@@ -177,8 +177,8 @@ process call_genes {
 
     script:
         """
-        prodigal -a $sample_name.faa -d $sample_name.fna -f gff \
-        -o $sample_name.gff -c -q -p meta -i $filtered_assembly
+        prodigal -a ${sample_name}.faa -d ${sample_name}.fna -f gff \
+        -o ${sample_name}.gff -c -q -p meta -i $filtered_assembly
         """
     }
 
