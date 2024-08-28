@@ -97,14 +97,14 @@ process preprocess_single_end {
 process motus_paired_end {
 
     input:
-        tuple val(sample_name), path("merged.fq.gz"), path("R1.fq.gz"), path("R2.fq.gz"), path("singleton_reads.fq.gz")
+        tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
 
     output:
         tuple val(sample_name), path("${sample_name}.motus")
 
     script:
         """
-        motus profile -f R1.fq.gz -r R2.fq.gz -s merged.fq.gz,singleton_reads.fq.gz \
+        motus profile -f $paired_1 -r $paired_2 -s $merged,$singleton_reads\
         -n $sample_name -c -k mOTU -q -p -o ${sample_name}.motus
         """
     }
@@ -112,15 +112,30 @@ process motus_paired_end {
 process motus_single_end {
 
     input:
-        tuple val(sample_name), path("singleton_reads.fq.gz")
+        tuple val(sample_name), path(singleton_reads)
 
     output:
         tuple val(sample_name), path("${sample_name}.motus")
 
     script:
         """
-        motus profile -s singleton_reads.fq.gz \
+        motus profile -s $singleton_reads \
         -n $sample_name -c -k mOTU -q -p -o ${sample_name}.motus
+        """
+    }
+
+process assemble_paired_end {
+
+    input:
+        tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
+
+    output:
+        tuple val(sample_name), path("assembly")
+
+    script:
+        """
+        mkdir assembly
+        metaspades.py -t 4 -m 10 --only-assembler --pe-1 1 $paired_1 --pe-2 1 $paired_2 --pe-m 1 $merged --pe-s 1 $singleton_reads -o assembly
         """
     }
 
@@ -138,7 +153,10 @@ workflow {
     motus_paired_end(preprocessed_paired)
 
     preprocessed_single = preprocess_single_end(single_end_samples, host_bbmap_ref)
+
     motus_single_end(preprocessed_single)
+
+    assembly = assemble_paired_end(preprocessed_paired)
 }
 
 workflow.onComplete {
