@@ -139,6 +139,21 @@ process assemble_paired_end {
         """
     }
 
+process filter_short_contigs {
+
+    input:
+        tuple val(sample_name), path(assembly)
+
+    output:
+        tuple val(sample_name), path("filtered_${sample_name}.scaffoldss.min1000.fasta")
+
+    script:
+        """
+        python scaffold_filter.py $sample_name scaffolds $assembly filtered_$sample_name
+        """
+    }
+
+
 workflow {
     input_file = Channel.fromPath(params.input)
     samples = input_file
@@ -157,6 +172,8 @@ workflow {
     motus_single_end(preprocessed_single)
 
     assembly = assemble_paired_end(preprocessed_paired)
+
+    filtered_assembly = filter_short_contigs(assembly)
 }
 
 workflow.onComplete {
