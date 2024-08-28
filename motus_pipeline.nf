@@ -59,21 +59,6 @@ process preprocess_paired_end {
         """
     }
 
-process motus_paired_end {
-
-    input:
-        tuple val(sample_name), path("merged.fq.gz"), path("R1.fq.gz"), path("R2.fq.gz"), path("singleton_reads.fq.gz")
-
-    output:
-        tuple val(sample_name), path("${sample_name}.motus")
-
-    script:
-        """
-        motus profile -f  R1.fq.gz -r R2.fq.gz -s merged.fq.gz,singleton_reads.fq.gz \
-        -n $sample_name -c -k mOTU -q -p -o ${sample_name}.motus
-        """
-    }
-
 process preprocess_single_end {
 
     input:
@@ -106,6 +91,21 @@ process preprocess_single_end {
         qin=33 minid=0.95 maxindel=3 bwr=0.16 bw=12 quickmatch fast \
         minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=qf.fasta.gz \
         outu=singleton_reads.fq.gz t=8 2>> removeHost.log
+        """
+    }
+
+process motus_paired_end {
+
+    input:
+        tuple val(sample_name), path("merged.fq.gz"), path("R1.fq.gz"), path("R2.fq.gz"), path("singleton_reads.fq.gz")
+
+    output:
+        tuple val(sample_name), path("${sample_name}.motus")
+
+    script:
+        """
+        motus profile -f R1.fq.gz -r R2.fq.gz -s merged.fq.gz,singleton_reads.fq.gz \
+        -n $sample_name -c -k mOTU -q -p -o ${sample_name}.motus
         """
     }
 
