@@ -218,16 +218,16 @@ process align_reads {
         mkdir alignments
         bwa index $gene_catalog/gene_catalog_cdhit9590.fasta
 
-        bwa mem -a -t 4 $gene_catalog/gene_catalog_cdhit9590.fasta $paired_1 \
+        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $paired_1 \
         | samtools view -F 4 -bh - > alignments/${sample_name}_r1.bam
 
-        bwa mem -a -t 4 $gene_catalog/gene_catalog_cdhit9590.fasta $paired_2 \
+        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $paired_2 \
         | samtools view -F 4 -bh - > alignments/${sample_name}_r2.bam
 
-        bwa mem -a -t 4 $gene_catalog/gene_catalog_cdhit9590.fasta $merged \
+        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $merged \
         | samtools view -F 4 -bh - > alignments/${sample_name}_merged.bam
 
-        bwa mem -a -t 4 $gene_catalog/gene_catalog_cdhit9590.fasta $singleton_reads \
+        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $singleton_reads \
         | samtools view -F 4 -bh - > alignments/${sample_name}_singleton.bam
         """
     }
