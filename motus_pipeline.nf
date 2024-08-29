@@ -263,6 +263,23 @@ process count_reads {
         """
     }
 
+process rpsblast_COG {
+
+  input:
+    tuple (file(cog_db), file(seq))
+
+  output:
+  path result_file
+
+  script:
+  n = seq.name
+  result_file = "${n}.tab"
+  """
+  rpsblast -db cog/cog_db -query $seq -outfmt 6 -evalue 0.001 \
+            -num_threads 4 > ${result_file}
+  """
+}
+
 
 workflow {
     input_file = Channel.fromPath(params.input)
@@ -299,6 +316,11 @@ workflow {
 
     reads_and_motus = filtered_reads.join(motus_paired_end.out)
     counts = count_reads(params.count_reads, reads_and_motus)
+
+    gene_catalog_aa = gene_catalog.first() + "/gene_catalog_cdhit9590.faa"
+    split_aa_seqs = gene_catalog_aa.splitFasta( by: 300, file: "chunk_" )
+    cog_db = Channel.fromPath("$params.cog_db", type: "dir")
+    cogs = rpsblast_COG(cog_db.combine(split_aa_seqs))
 }
 
 workflow.onComplete {

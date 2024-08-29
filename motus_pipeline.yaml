@@ -18,6 +18,7 @@ dependencies:
     - bwa=0.7.*
     - checkm-genome
     - metabat2=2.15
+    - blast
     - pip:
         - filtersam
 
