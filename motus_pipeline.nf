@@ -211,7 +211,7 @@ process align_reads {
         tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
 
     output:
-        path("cdhit9590")
+        tuple val(sample_name), path("alignments")
 
     script:
         """
