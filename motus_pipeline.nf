@@ -232,6 +232,22 @@ process align_reads {
         """
     }
 
+process filter_reads {
+
+    input:
+        tuple val(sample_name), path(alignments)
+
+    output:
+        tuple val(sample_name), path("${sample_name}_filtered.bam")
+
+    script:
+        """
+        samtools merge ${sample_name}.bam ${sample_name}_merged.bam ${sample_name}_r1.bam ${sample_name}_r2.bam ${sample_name}_singleton.bam
+        samtools view -F 256 -e '(qlen-sclen)>45' -O BAM -o filtered_primary.bam ${sample_name}.bam
+        filtersam -i 95 -p 8 -o ${sample_name}_filtered.bam filtered_primary.bam
+        """
+    }
+
 
 workflow {
     input_file = Channel.fromPath(params.input)
@@ -263,6 +279,8 @@ workflow {
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
 
     aligned_reads = align_reads(gene_catalog, preprocessed_paired)
+
+    filtered_reads = filter_reads(aligned_reads)
 }
 
 workflow.onComplete {
