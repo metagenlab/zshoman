@@ -73,24 +73,24 @@ process preprocess_single_end {
         # adapter trimming
         bbduk.sh -Xmx1G usejni=t in=$file1 out=stdout.fq \
         refstats=adapter_trim.stats statscolumns=5 overwrite=t ref=$params.references.adapters \
-        ktrim=r k=23 mink=11 hdist=1 2>> preprocessing.log | \
+        ktrim=r k=23 mink=11 hdist=1 t=20 2>> preprocessing.log | \
 
         # contaminant filtering
         bbduk.sh -Xmx1G usejni=t interleaved=false overwrite=t \
         in=stdin.fq out=stdout.fq ref=$params.references.phix \
-        k=31 hdist=1 refstats=phix.stats statscolumns=5 2>> preprocessing.log | \
+        k=31 hdist=1 refstats=phix.stats statscolumns=5 t=20 2>> preprocessing.log | \
 
         # quality filtering.
         # we retain just that one in singleton_reads_qf.fq.gz
         bbduk.sh -Xmx1G usejni=t overwrite=t interleaved=false \
         in=stdin.fq out=qf.fasta.gz minlength=45 qtrim=rl maq=20 maxns=1 \
-        stats=qc.stats statscolumns=5 trimq=14 2>> preprocessing.log
+        stats=qc.stats statscolumns=5 trimq=14 t=20 2>> preprocessing.log
 
         # Filtering out human host reads
         bbmap.sh -Xmx24g usejni=t interleaved=false overwrite=t \
         qin=33 minid=0.95 maxindel=3 bwr=0.16 bw=12 quickmatch fast \
         minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=qf.fasta.gz \
-        outu=singleton_reads.fq.gz t=8 2>> removeHost.log
+        outu=singleton_reads.fq.gz t=20 2>> removeHost.log
         """
     }
 
@@ -105,7 +105,7 @@ process motus_paired_end {
     script:
         """
         motus profile -f $paired_1 -r $paired_2 -s $merged,$singleton_reads\
-        -n $sample_name -c -k mOTU -q -p -o ${sample_name}.motus
+        -n $sample_name -c -k mOTU -q -p -t 20 -o ${sample_name}.motus
         """
     }
 
@@ -135,7 +135,7 @@ process assemble_paired_end {
     script:
         """
         mkdir assembly
-        metaspades.py -t 4 -m 10 --only-assembler --pe-1 1 $paired_1 --pe-2 1 $paired_2 --pe-m 1 $merged --pe-s 1 $singleton_reads -o assembly
+        metaspades.py -t 20 -m 150 --only-assembler --pe-1 1 $paired_1 --pe-2 1 $paired_2 --pe-m 1 $merged --pe-s 1 $singleton_reads -o assembly
         """
     }
 
