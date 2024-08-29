@@ -242,7 +242,7 @@ process filter_reads {
 
     script:
         """
-        samtools merge ${sample_name}.bam ${sample_name}_merged.bam ${sample_name}_r1.bam ${sample_name}_r2.bam ${sample_name}_singleton.bam
+        samtools merge ${sample_name}.bam ${alignments}/${sample_name}_merged.bam ${alignments}/${sample_name}_r1.bam ${alignments}/${sample_name}_r2.bam ${alignments}/${sample_name}_singleton.bam
         samtools view -F 256 -e '(qlen-sclen)>45' -O BAM -o filtered_primary.bam ${sample_name}.bam
         filtersam -i 95 -p 8 -o ${sample_name}_filtered.bam filtered_primary.bam
         """
