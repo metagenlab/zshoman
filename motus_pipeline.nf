@@ -248,6 +248,21 @@ process filter_reads {
         """
     }
 
+process count_reads {
+
+    input:
+        path(read_counter)
+        tuple val(sample_name), path(filtered_reads), path(motus)
+
+    output:
+        tuple val(sample_name), path("${sample_name}_read_counts.csv")
+
+    script:
+        """
+        python $read_counter $filtered_reads $motus ${sample_name}_read_counts.csv
+        """
+    }
+
 
 workflow {
     input_file = Channel.fromPath(params.input)
@@ -281,6 +296,9 @@ workflow {
     aligned_reads = align_reads(gene_catalog, preprocessed_paired)
 
     filtered_reads = filter_reads(aligned_reads)
+
+    reads_and_motus = filtered_reads.join(motus_paired_end.out)
+    counts = count_reads(params.count_reads, reads_and_motus)
 }
 
 workflow.onComplete {
