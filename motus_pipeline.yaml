@@ -14,7 +14,7 @@ dependencies:
     - prodigal=2.6.3
     - cd-hit=4.8.1
     - seqtk=1.3
-    - samtools=1.10
+    - samtools>=1.19
     - bwa=0.7.*
     - checkm-genome
     - metabat2=2.15
