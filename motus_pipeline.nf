@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 process index_host_genome {
-
+    cpus = 1
     output:
         path("host_bbmap_ref")
 
@@ -14,7 +14,7 @@ process index_host_genome {
 
 
 process preprocess_paired_end {
-
+    cpus = 8
     input:
         tuple val(sample_name), path(file1), path(file2)
         path(host_bbmap_ref)
@@ -27,19 +27,19 @@ process preprocess_paired_end {
         # adapter trimming
         bbduk.sh -Xmx1G usejni=t in=$file1 in2=$file2 out=stdout.fq \
         refstats=adapter_trim.stats statscolumns=5 overwrite=t ref=$params.references.adapters \
-        ktrim=r k=23 mink=11 hdist=1 2>> preprocessing.log | \
+        ktrim=r k=23 mink=11 hdist=1 t=8 2>> preprocessing.log | \
 
         # contaminant filtering
         bbduk.sh -Xmx1G usejni=t interleaved=true overwrite=t \
         in=stdin.fq out=stdout.fq ref=$params.references.phix \
-        k=31 hdist=1 refstats=phix.stats statscolumns=5 2>> preprocessing.log | \
+        k=31 hdist=1 refstats=phix.stats statscolumns=5 t=8 2>> preprocessing.log | \
 
         # quality filtering. We also retain singleton reads that pass the filter
         # i.e. when only one of a paired end read passes,
         # we retain just that one in singleton_reads_qf.fq.gz
         bbduk.sh -Xmx1G usejni=t overwrite=t interleaved=true \
         in=stdin.fq out=qf.fasta.gz minlength=45 qtrim=rl maq=20 maxns=1 \
-        stats=qc.stats statscolumns=5 trimq=14 outs=singleton_reads_qf.fq.gz 2>> preprocessing.log
+        stats=qc.stats statscolumns=5 trimq=14 outs=singleton_reads_qf.fq.gz t=8 2>> preprocessing.log
 
         # Filtering out human host reads
         bbmap.sh -Xmx24g usejni=t interleaved=true overwrite=t \
@@ -55,7 +55,7 @@ process preprocess_paired_end {
         # Filtering out human host reads for singleton reads
         bbmap.sh -Xmx24g usejni=t threads=24 overwrite=t qin=33 minid=0.95 maxindel=3 \
         bwr=0.16 bw=12 quickmatch fast minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 \
-        untrim=t in=singleton_reads_qf.fq.gz outu=singleton_reads.fq.gz 2>> out.rmHost.log
+        untrim=t in=singleton_reads_qf.fq.gz outu=singleton_reads.fq.gz t=8 2>> out.rmHost.log
         """
     }
 
@@ -95,7 +95,7 @@ process preprocess_single_end {
     }
 
 process motus_paired_end {
-
+    cpus = 20
     input:
         tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
 
@@ -125,7 +125,7 @@ process motus_single_end {
     }
 
 process assemble_paired_end {
-
+    cpus = 20
     input:
         tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
 
@@ -140,7 +140,7 @@ process assemble_paired_end {
     }
 
 process filter_short_contigs {
-
+    cpus = 1
     input:
         tuple val(sample_name), path(assembly)
 
@@ -154,7 +154,7 @@ process filter_short_contigs {
     }
 
 process get_assembly_stats {
-
+    cpus = 1
     input:
         tuple val(sample_name), path(filtered_assembly)
 
@@ -168,7 +168,7 @@ process get_assembly_stats {
     }
 
 process call_genes {
-
+    cpus = 1
     input:
         tuple val(sample_name), path(filtered_assembly)
 
@@ -183,7 +183,7 @@ process call_genes {
     }
 
 process make_gene_catalog {
-
+    cpus = 20
     input:
         path(amino_acids)
         path(nucleotides)
@@ -205,7 +205,7 @@ process make_gene_catalog {
     }
 
 process align_reads {
-
+    cpus = 20
     input:
         path(gene_catalog)
         tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
@@ -233,7 +233,7 @@ process align_reads {
     }
 
 process filter_reads {
-
+    cpus = 5
     input:
         tuple val(sample_name), path(alignments)
 
@@ -244,12 +244,12 @@ process filter_reads {
         """
         samtools merge ${sample_name}.bam ${alignments}/${sample_name}_merged.bam ${alignments}/${sample_name}_r1.bam ${alignments}/${sample_name}_r2.bam ${alignments}/${sample_name}_singleton.bam
         samtools view -F 256 -e '(qlen-sclen)>45' -O BAM -o filtered_primary.bam ${sample_name}.bam
-        filtersam -i 95 -p 8 -o ${sample_name}_filtered.bam filtered_primary.bam
+        filtersam -i 95 -p 5 -o ${sample_name}_filtered.bam filtered_primary.bam
         """
     }
 
 process count_reads {
-
+    cpus = 1
     input:
         path(read_counter)
         tuple val(sample_name), path(filtered_reads), path(motus)
@@ -264,20 +264,20 @@ process count_reads {
     }
 
 process rpsblast_COG {
+    cpus = 4
+    input:
+        tuple (file(cog_db), file(seq))
 
-  input:
-    tuple (file(cog_db), file(seq))
+    output:
+        path result_file
 
-  output:
-  path result_file
-
-  script:
-  n = seq.name
-  result_file = "${n}.tab"
-  """
-  rpsblast -db cog/cog_db -query $seq -outfmt 6 -evalue 0.001 \
-            -num_threads 4 > ${result_file}
-  """
+    script:
+        n = seq.name
+        result_file = "${n}.tab"
+        """
+        rpsblast -db cog/cog_db -query $seq -outfmt 6 -evalue 0.001 \
+                -num_threads 4 > ${result_file}
+        """
 }
 
 
