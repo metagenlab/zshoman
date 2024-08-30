@@ -292,7 +292,7 @@ process merge_cogs {
     script:
         cdd_to_cog = "${cog_db}/cdd_to_cog"
         """
-        python $params.merge_cogs $cog_db $cog_hit_files
+        python $params.merge_cogs $cdd_to_cog $cog_hit_files
         """
 }
 
