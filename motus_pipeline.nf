@@ -299,9 +299,6 @@ process download_cog_definitions {
     cpus = 1
     publishDir params.publish_dir
 
-    input:
-        motus_paired_end, assembly, gene_catalog, counts, cogs
-
     output:
         tuple (path("cog-20.def.tab"), path("fun-20.tab"))
 
@@ -374,6 +371,10 @@ process collect_motus_outputs {
 
     output:
         path(motus_file)
+
+    script:
+        """
+        """
 }
 
 process collect_assemblies {
@@ -385,6 +386,10 @@ process collect_assemblies {
 
     output:
         path(assembly)
+
+    script:
+        """
+        """
 }
 
 process collect_counts {
@@ -396,6 +401,10 @@ process collect_counts {
 
     output:
         path(counts)
+
+    script:
+        """
+        """
 }
 
 process collect_cogs {
@@ -407,6 +416,10 @@ process collect_cogs {
 
     output:
         path(cogs)
+
+    script:
+        """
+        """
 }
 
 process collect_gene_catalog {
@@ -418,6 +431,10 @@ process collect_gene_catalog {
 
     output:
         path(gene_catalog)
+
+    script:
+        """
+        """
 }
 
 workflow {
