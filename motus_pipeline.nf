@@ -491,7 +491,7 @@ workflow {
 
     // Collection should be replaced by publishing directly from
     // the processes
-    collect_motus_outputs(motus_paired_end)
+    collect_motus_outputs(motus_paired_end.out)
     collect_assemblies(filtered_assembly)
     collect_counts(counts)
     collect_cogs(cogs)
