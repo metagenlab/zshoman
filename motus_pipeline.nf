@@ -320,6 +320,19 @@ process merge_cogs {
         """
 }
 
+process download_cog_definitions {
+    cpus = 1
+
+    output:
+        tuple (path("cog-20.def.tab"), path("fun-20.tab"))
+
+    script:
+        """
+        wget ftp://ftp.ncbi.nih.gov/pub/COG/COG2020/data/cog-20.def.tab
+        wget ftp://ftp.ncbi.nih.gov/pub/COG/COG2020/data/fun-20.tab
+        """
+}
+
 workflow {
     input_file = Channel.fromPath(params.input)
     samples = input_file
@@ -362,6 +375,7 @@ workflow {
     cogs = rpsblast_COG(cog_db.combine(split_aa_seqs))
     merged_cogs = merge_cogs(cogs.collect())
 
+    cog_def_files = download_cog_definitions()
 }
 
 workflow.onComplete {
