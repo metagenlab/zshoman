@@ -283,7 +283,8 @@ process rpsblast_COG {
 process merge_cogs {
     cpus = 1
     input:
-        tuple (path(cog_db), path(cog_hit_files))
+        path(cog_db)
+        path(cog_hit_files)
 
     output:
         path("cogs.csv")
