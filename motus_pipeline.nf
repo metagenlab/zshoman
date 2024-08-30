@@ -486,7 +486,7 @@ workflow {
     // KOs
     ko_db = Channel.fromPath("$params.ko_db", type: "dir")
     ko_hits = execute_kofamscan(ko_db.combine(split_aa_seqs))
-    prepare_ko_table(ko_hits.collect())
+    get_ko_table(ko_hits.collect())
     get_ko_mappings()
 
     // Collection should be replaced by publishing directly from
