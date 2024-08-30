@@ -19,6 +19,7 @@ dependencies:
     - checkm-genome
     - metabat2=2.15
     - blast
+    - kofamscan=1.3.0
     - pip:
         - filtersam
 

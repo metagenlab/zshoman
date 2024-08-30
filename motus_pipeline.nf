@@ -312,6 +312,59 @@ process download_cog_definitions {
         """
 }
 
+process execute_kofamscan {
+
+    cpus = 4
+
+    input:
+        tuple (path(ko_db), path(seq))
+
+    output:
+        path '*tab'
+
+    script:
+        n = seq.name
+
+        """
+        exec_annotation ${n} -p ${ko_db}/profiles/prokaryote.hal \
+            -k ${ko_db}/ko_list --cpu 4 -o ${n}.tab
+        """
+}
+
+process get_ko_table {
+    publishDir params.publish_dir
+    cpus = 1
+    input:
+       path(ko_hit_files)
+
+    output:
+        path("kos.csv")
+
+    script:
+        """
+        python $params.prepare_ko_table $ko_hit_files
+        """
+}
+
+process get_ko_mappings {
+    publishDir params.publish_dir
+    cpus = 1
+
+    output:
+        tuple( path("ko_module_classes.csv"),
+               path("ko_modules.csv"),
+               path("ko_pathways.csv"),
+               path("ko_definitions.csv"),
+               path("ko_to_pathway.csv"),
+               path("ko_to_module.csv")
+            )
+
+    script:
+        """
+        python $params.get_ko_mappings
+        """
+}
+
 process collect_motus_outputs {
     cpus = 1
     publishDir params.publish_dir
@@ -405,14 +458,21 @@ workflow {
 
     gene_catalog_aa = gene_catalog.first() + "/gene_catalog_cdhit9590.faa"
     split_aa_seqs = gene_catalog_aa.splitFasta( by: 300, file: "chunk_" )
+
+    // COGS
     cog_db = Channel.fromPath("$params.cog_db", type: "dir")
     cogs = rpsblast_COG(cog_db.combine(split_aa_seqs))
     merged_cogs = merge_cogs(cog_db, cogs.collect())
-
     cog_def_files = download_cog_definitions()
 
-    //Collection should be replaced by publishing directly from
-    //the processes
+    // KOs
+    ko_db = Channel.fromPath("$params.ko_db", type: "dir")
+    ko_hits = execute_kofamscan(ko_db.combine(split_aa_seqs))
+    prepare_ko_table(ko_hits.collect())
+    get_ko_mappings()
+
+    // Collection should be replaced by publishing directly from
+    // the processes
     collect_motus_outputs(motus_paired_end)
     collect_assemblies(filtered_assembly)
     collect_counts(counts)
