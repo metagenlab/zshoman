@@ -291,32 +291,7 @@ process merge_cogs {
     script:
         cdd_to_cog = "${cog_db}/cdd_to_cog"
         """
-        #!/usr/bin/env python
-        import pandas as pd
-        db = DB.load_db(db_file, params)
-        hsh_cdd_to_cog = {}
-        with open(cdd_to_cog, "r") as cdd_to_cog_file:
-            for line in cdd_to_cog_file:
-                cog, cdd = line.split()
-                hsh_cdd_to_cog[int(cdd)] = int(cog)
-
-        data = []
-        for chunk in $cog_hit_files:
-            cogs_hits = pd.read_csv(chunk, sep="\t", header=None,
-                                    names=["seq_hsh", "cdd", "pident", "length", "mismatch", "gapopen", "qstart",
-                                           "qend", "sstart", "send", "evalue", "bitscore"])
-
-            # Select only the best hits: using pandas clearly is an overkill here
-            cogs_hits = cogs_hits[["seq_hsh", "cdd", "evalue", "pident"]]
-            min_hits = cogs_hits.sort_values(
-                ["evalue", "pident"],
-                ascending=[True, False]).drop_duplicates("seq_hsh")
-            for index, row in min_hits.iterrows():
-                cog = hsh_cdd_to_cog[int(row["cdd"].split(":")[1])]
-                evalue = float(row["evalue"])
-                data.append([row["seq_hsh"], cog, evalue])
-        df = pd.DataFrame(data, columns=["gene", "cog", "evalue"])
-        df.to_csv("cogs.csv", index=False)
+        python $params.merge_cogs $cog_db $cog_hit_files
         """
 }
 
@@ -432,7 +407,7 @@ workflow {
     split_aa_seqs = gene_catalog_aa.splitFasta( by: 300, file: "chunk_" )
     cog_db = Channel.fromPath("$params.cog_db", type: "dir")
     cogs = rpsblast_COG(cog_db.combine(split_aa_seqs))
-    merged_cogs = merge_cogs(cogs.collect())
+    merged_cogs = merge_cogs(cog_db, cogs.collect())
 
     cog_def_files = download_cog_definitions()
 
