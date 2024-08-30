@@ -322,6 +322,10 @@ process merge_cogs {
 
 process download_cog_definitions {
     cpus = 1
+    publishDir params.publish_dir
+
+    input:
+        motus_paired_end, assembly, gene_catalog, counts, cogs
 
     output:
         tuple (path("cog-20.def.tab"), path("fun-20.tab"))
@@ -331,6 +335,61 @@ process download_cog_definitions {
         wget ftp://ftp.ncbi.nih.gov/pub/COG/COG2020/data/cog-20.def.tab
         wget ftp://ftp.ncbi.nih.gov/pub/COG/COG2020/data/fun-20.tab
         """
+}
+
+process collect_motus_outputs {
+    cpus = 1
+    publishDir params.publish_dir
+
+    input:
+        tuple val(sample_name), path(motus_file)
+
+    output:
+        path(motus_file)
+}
+
+process collect_assemblies {
+    cpus = 1
+    publishDir params.publish_dir
+
+    input:
+        tuple val(sample_name), path(assembly)
+
+    output:
+        path(assembly)
+}
+
+process collect_counts {
+    cpus = 1
+    publishDir params.publish_dir
+
+    input:
+        tuple val(sample_name), path(counts)
+
+    output:
+        path(counts)
+}
+
+process collect_cogs {
+    cpus = 1
+    publishDir params.publish_dir
+
+    input:
+        path(cogs)
+
+    output:
+        path(cogs)
+}
+
+process collect_gene_catalog {
+    cpus = 1
+    publishDir params.publish_dir
+
+    input:
+        path(gene_catalog)
+
+    output:
+        path(gene_catalog)
 }
 
 workflow {
@@ -376,6 +435,14 @@ workflow {
     merged_cogs = merge_cogs(cogs.collect())
 
     cog_def_files = download_cog_definitions()
+
+    //Collection should be replaced by publishing directly from
+    //the processes
+    collect_motus_outputs(motus_paired_end)
+    collect_assemblies(filtered_assembly)
+    collect_counts(counts)
+    collect_cogs(cogs)
+    collect_gene_catalog(gene_catalog_aa)
 }
 
 workflow.onComplete {
