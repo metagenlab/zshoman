@@ -494,7 +494,7 @@ workflow {
     collect_motus_outputs(motus_paired_end.out)
     collect_assemblies(filtered_assembly)
     collect_counts(counts)
-    collect_cogs(cogs)
+    collect_cogs(merged_cogs)
     collect_gene_catalog(gene_catalog_aa)
 }
 
