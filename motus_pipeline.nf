@@ -444,6 +444,16 @@ workflow {
     samples = input_file
         .splitCsv(header: false, strip: false, limit: 1662)
 
+    // prepare metadata for samples to distinguish single from paired-end reads
+    samples = samples.map( {
+        row ->
+            if (!row[2].strip()) {
+                return new Tuple ([ id:row[0], single_end:true ], [ row[1] ])
+            } else {
+                return new Tuple ([ id:row[0], single_end:false ], [ row[1], row[2] ])
+            }
+        })
+
     /*
     paired_end_samples = samples.filter( { it[2].strip() } )
     single_end_samples = samples.filter( { !it[2].strip() } ).map( {row -> new Tuple (row[0], row[1])})
