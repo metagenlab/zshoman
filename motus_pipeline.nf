@@ -126,6 +126,7 @@ process motus_single_end {
 
 process assemble_paired_end {
     cpus = 20
+    memory '250 GB'
     input:
         tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
 
@@ -135,7 +136,7 @@ process assemble_paired_end {
     script:
         """
         mkdir assembly
-        metaspades.py -t 20 -m 150 --only-assembler --pe-1 1 $paired_1 --pe-2 1 $paired_2 --pe-m 1 $merged --pe-s 1 $singleton_reads -o assembly
+        metaspades.py -t ${task.cpus} -m ${task.memory.toGiga()} --only-assembler --pe-1 1 $paired_1 --pe-2 1 $paired_2 --pe-m 1 $merged --pe-s 1 $singleton_reads -o assembly
         """
     }
 
