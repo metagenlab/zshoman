@@ -444,6 +444,7 @@ workflow {
     samples = input_file
         .splitCsv(header: false, strip: false, limit: 1662)
 
+    /*
     paired_end_samples = samples.filter( { it[2].strip() } )
     single_end_samples = samples.filter( { !it[2].strip() } ).map( {row -> new Tuple (row[0], row[1])})
 
@@ -497,6 +498,7 @@ workflow {
     collect_counts(counts)
     collect_cogs(merged_cogs)
     collect_gene_catalog(gene_catalog_aa)
+    */
 }
 
 workflow.onComplete {
