@@ -1,5 +1,7 @@
 #!/usr/bin/env nextflow
 
+include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
+
 process index_host_genome {
     cpus = 1
     output:
@@ -453,6 +455,8 @@ workflow {
                 return new Tuple ([ id:row[0], single_end:false ], [ row[1], row[2] ])
             }
         })
+
+    BBDUK_TRIM_ADAPTERS(samples, params.references.adapters)
 
     /*
     paired_end_samples = samples.filter( { it[2].strip() } )
