@@ -2,6 +2,7 @@
 
 include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
 
@@ -464,6 +465,7 @@ workflow {
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix).reads
     host_index = BBMAP_INDEX_HOST(params.references.masked_human)
     host_filtered_reads = BBMAP_FILTER_HOST(phix_filtered_reads, host_index.index).reads
+    quality_filtered_reads = BBDUK_QUALITY_FILTERING(host_filtered_reads, []).reads
 
     /*
     paired_end_samples = samples.filter( { it[2].strip() } )
