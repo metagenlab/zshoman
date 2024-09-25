@@ -3,7 +3,9 @@
 include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING } from './modules/nf-core/bbmap/bbduk/main'
-include { BBMAP_ALIGN as BBMAP_FILTER_HOST } from './modules/nf-core/bbmap/align/main'
+include { BBMAP_ALIGN as BBMAP_FILTER_HOST_SINGLE_END } from './modules/nf-core/bbmap/align/main'
+include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_PAIRS } from './modules/nf-core/bbmap/align/main'
+include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
 
 
@@ -463,9 +465,41 @@ workflow {
 
     trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.references.adapters).reads
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix).reads
+    quality_filtered_reads = BBDUK_QUALITY_FILTERING(phix_filtered_reads, []).reads
+
+    // here we split up paired-end and single-end samples, as we will need to
+    // treat them separately because we kept the singletons for the paired-end
+    // reads.
+    quality_filtered_reads = quality_filtered_reads.branch(
+        {
+            single_end: it[0].single_end
+            paired_end: !it[0].single_end
+        })
+
+    // Sort the files for paired-end reads -> (*_1, *_2, singletons)
+    def compare_files = { a, b ->
+        if (a.toString().endsWith("_1.fastq.gz")) {
+            return -1
+        } else if (a.toString().endsWith("singleton_reads_qf.fastq.gz")) {
+            return 1
+        } else if (b.toString().endsWith("_1.fastq.gz")) {
+            return 1
+        } else {
+            return -1
+        }
+    }
+
+    paired_end = quality_filtered_reads.paired_end.map( { new Tuple (it[0], it[1].sort(compare_files)) } )
+    paired_end = paired_end.multiMap(
+        {
+            pairs: new Tuple (it[0], [it[1][0], it[1][1]])
+            singletons: new Tuple (it[0] + [single_end:true], it[1][2])
+        })
+
     host_index = BBMAP_INDEX_HOST(params.references.masked_human)
-    host_filtered_reads = BBMAP_FILTER_HOST(phix_filtered_reads, host_index.index).reads
-    quality_filtered_reads = BBDUK_QUALITY_FILTERING(host_filtered_reads, []).reads
+    single_end_reads = BBMAP_FILTER_HOST_SINGLE_END(quality_filtered_reads.single_end, host_index.index).reads
+    paired_end_reads_pairs = BBMAP_FILTER_HOST_PAIRED_END_PAIRS(paired_end.pairs, host_index.index).reads
+    paired_end_reads_singletons = BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS(paired_end.singletons, host_index.index).reads
 
     /*
     paired_end_samples = samples.filter( { it[2].strip() } )

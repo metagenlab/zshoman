@@ -12,7 +12,7 @@ process BBMAP_ALIGN {
     path ref
 
     output:
-    tuple val(meta), path("*.fq.gz"), emit: reads
+    tuple val(meta), path("*.fastq.gz"), emit: reads
     tuple val(meta), path("*.log"), emit: log
     path "versions.yml"           , emit: versions
 
