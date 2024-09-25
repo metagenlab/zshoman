@@ -2,6 +2,9 @@
 
 include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_ALIGN as BBMAP_FILTER_HOST } from './modules/nf-core/bbmap/align/main'
+include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
+
 
 process index_host_genome {
     cpus = 1
@@ -48,7 +51,7 @@ process preprocess_paired_end {
         bbmap.sh -Xmx24g usejni=t interleaved=true overwrite=t \
         qin=33 minid=0.95 maxindel=3 bwr=0.16 bw=12 quickmatch fast \
         minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=qf.fasta.gz \
-        out=stdout.fq t=8 2>> removeHost.log |
+        outu=stdout.fq t=8 2>> removeHost.log |
 
         # Merging overlapping paired-end reads
         bbmerge.sh -Xmx24G interleaved=true in=stdin.fq out=merged.fq.gz \
@@ -458,7 +461,10 @@ workflow {
         })
 
     trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.references.adapters).reads
-    filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix).reads
+    phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix).reads
+    host_index = BBMAP_INDEX_HOST(params.references.masked_human)
+    host_filtered_reads = BBMAP_FILTER_HOST(phix_filtered_reads, host_index.index).reads
+
     /*
     paired_end_samples = samples.filter( { it[2].strip() } )
     single_end_samples = samples.filter( { !it[2].strip() } ).map( {row -> new Tuple (row[0], row[1])})
