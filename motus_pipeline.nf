@@ -7,6 +7,7 @@ include { BBMAP_ALIGN as BBMAP_FILTER_HOST_SINGLE_END } from './modules/nf-core/
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_PAIRS } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
+include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbmerge/main'
 
 
 process index_host_genome {
@@ -500,6 +501,8 @@ workflow {
     single_end_reads = BBMAP_FILTER_HOST_SINGLE_END(quality_filtered_reads.single_end, host_index.index).reads
     paired_end_reads_pairs = BBMAP_FILTER_HOST_PAIRED_END_PAIRS(paired_end.pairs, host_index.index).reads
     paired_end_reads_singletons = BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS(paired_end.singletons, host_index.index).reads
+
+    paired_end_reads_merged = BBMAP_MERGE_PAIRS(paired_end_reads_pairs, false)
 
     /*
     paired_end_samples = samples.filter( { it[2].strip() } )
