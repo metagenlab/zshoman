@@ -1,6 +1,7 @@
 #!/usr/bin/env nextflow
 
 include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
 
 process index_host_genome {
     cpus = 1
@@ -456,8 +457,8 @@ workflow {
             }
         })
 
-    BBDUK_TRIM_ADAPTERS(samples, params.references.adapters)
-
+    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.references.adapters).reads
+    filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix).reads
     /*
     paired_end_samples = samples.filter( { it[2].strip() } )
     single_end_samples = samples.filter( { !it[2].strip() } ).map( {row -> new Tuple (row[0], row[1])})
