@@ -12,7 +12,7 @@ process BBMAP_ALIGN {
     path ref
 
     output:
-    tuple val(meta), path("*.bam"), emit: bam
+    tuple val(meta), path("*.fq.gz"), emit: reads
     tuple val(meta), path("*.log"), emit: log
     path "versions.yml"           , emit: versions
 
@@ -23,6 +23,7 @@ process BBMAP_ALIGN {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
 
+    output  = meta.single_end ? "outu=${prefix}.fastq.gz" : "outu1=${prefix}_1.fastq.gz outu2=${prefix}_2.fastq.gz"
     input = meta.single_end ? "in=${fastq}" : "in=${fastq[0]} in2=${fastq[1]}"
 
     // Set the db variable to reflect the three possible types of reference input: 1) directory
@@ -42,7 +43,7 @@ process BBMAP_ALIGN {
     bbmap.sh \\
         $db \\
         $input \\
-        out=${prefix}.bam \\
+        $output \\
         $args \\
         threads=$task.cpus \\
         -Xmx${task.memory.toGiga()}g \\
