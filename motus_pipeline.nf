@@ -11,21 +11,8 @@ include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/
 include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbmerge/main'
 include { MOTUS_PROFILE } from './modules/local/motus/main'
 include { SPADES } from './modules/nf-core/spades/main'
+include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
 
-
-process filter_short_contigs {
-    cpus = 1
-    input:
-        tuple val(sample_name), path(assembly)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.scaffolds.min500.fasta")
-
-    script:
-        """
-        python $params.scaffold_filtering_script $sample_name scaffolds $assembly/scaffolds.fasta .
-        """
-    }
 
 process get_assembly_stats {
     cpus = 1
@@ -377,11 +364,13 @@ workflow {
     paired_end_reads = paired_end_reads.map({ new Tuple (it[0], it[3] + [it[2]] + [it[1]]) })
     preprocessed_samples = single_end_reads.mix(paired_end_reads)
 
-    MOTUS_PROFILE(preprocessed_samples)
-    SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], [])
+    motus_profilles = MOTUS_PROFILE(preprocessed_samples).motus
+
+    scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+
+    filtered_assembly = FILTER_SCAFFOLDS(scaffolds).scaffolds
 
     /*
-    filtered_assembly = filter_short_contigs(assembly)
 
     assembly_stats = get_assembly_stats(filtered_assembly)
 
