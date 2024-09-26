@@ -6,7 +6,7 @@ keywords:
   - profiling
   - abundance
 tools:
-  - bbmap:
+  - motus:
       description: mOTUs is a single copy marker gene based approach for taxonomic profiling of metagenomic data.
       homepage: https://github.com/motu-tool/mOTUs
       documentation: https://github.com/motu-tool/mOTUs/wiki
