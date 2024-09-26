@@ -2,7 +2,8 @@
 
 include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
-include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING_SINGLE_END } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING_PAIRED_END } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST_SINGLE_END } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_PAIRS } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS } from './modules/nf-core/bbmap/align/main'
@@ -328,16 +329,18 @@ workflow {
 
     trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.references.adapters).reads
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix).reads
-    quality_filtered_reads = BBDUK_QUALITY_FILTERING(phix_filtered_reads, []).reads
 
     // here we split up paired-end and single-end samples, as we will need to
-    // treat them separately because we kept the singletons for the paired-end
+    // treat them separately because we kep the singletons for the paired-end
     // reads.
-    quality_filtered_reads = quality_filtered_reads.branch(
+    phix_filtered_reads = phix_filtered_reads.branch(
         {
             single_end: it[0].single_end
             paired_end: !it[0].single_end
         })
+
+    qf_reads_single = BBDUK_QUALITY_FILTERING_SINGLE_END(phix_filtered_reads.single_end, []).reads
+    qf_reads_paired = BBDUK_QUALITY_FILTERING_PAIRED_END(phix_filtered_reads.paired_end, []).reads
 
     // Sort the files for paired-end reads -> (*_1, *_2, singletons)
     def compare_files = { a, b ->
@@ -352,17 +355,17 @@ workflow {
         }
     }
 
-    paired_end = quality_filtered_reads.paired_end.map( { new Tuple (it[0], it[1].sort(compare_files)) } )
-    paired_end = paired_end.multiMap(
+    qf_reads_paired = qf_reads_paired.map( { new Tuple (it[0], it[1].sort(compare_files)) } )
+    qf_reads_paired = qf_reads_paired.multiMap(
         {
             pairs: new Tuple (it[0], [it[1][0], it[1][1]])
             singletons: new Tuple (it[0] + [single_end:true], [it[1][2]])
         })
 
     host_index = BBMAP_INDEX_HOST(params.references.masked_human)
-    single_end_reads = BBMAP_FILTER_HOST_SINGLE_END(quality_filtered_reads.single_end, host_index.index).reads
-    paired_end_reads_pairs = BBMAP_FILTER_HOST_PAIRED_END_PAIRS(paired_end.pairs, host_index.index).reads
-    paired_end_reads_singletons = BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS(paired_end.singletons, host_index.index).reads
+    single_end_reads = BBMAP_FILTER_HOST_SINGLE_END(qf_reads_single, host_index.index).reads
+    paired_end_reads_pairs = BBMAP_FILTER_HOST_PAIRED_END_PAIRS(qf_reads_paired.pairs, host_index.index).reads
+    paired_end_reads_singletons = BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS(qf_reads_paired.singletons, host_index.index).reads
 
     paired_end_reads_merged = BBMAP_MERGE_PAIRS(paired_end_reads_pairs, false)
 
