@@ -400,7 +400,7 @@ workflow {
     paired_end = paired_end.multiMap(
         {
             pairs: new Tuple (it[0], [it[1][0], it[1][1]])
-            singletons: new Tuple (it[0] + [single_end:true], it[1][2])
+            singletons: new Tuple (it[0] + [single_end:true], [it[1][2]])
         })
 
     host_index = BBMAP_INDEX_HOST(params.references.masked_human)
