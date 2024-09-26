@@ -12,21 +12,7 @@ include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbm
 include { MOTUS_PROFILE } from './modules/local/motus/main'
 include { SPADES } from './modules/nf-core/spades/main'
 include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
-
-
-process get_assembly_stats {
-    cpus = 1
-    input:
-        tuple val(sample_name), path(filtered_assembly)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.stats")
-
-    script:
-        """
-        assembly-stats -l 500 -t <(cat $filtered_assembly) > ${sample_name}.stats
-        """
-    }
+include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
 
 process call_genes {
     cpus = 1
@@ -369,10 +355,9 @@ workflow {
     scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
 
     filtered_assembly = FILTER_SCAFFOLDS(scaffolds).scaffolds
+    assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
     /*
-
-    assembly_stats = get_assembly_stats(filtered_assembly)
 
     genes = call_genes(filtered_assembly)
 
