@@ -410,6 +410,14 @@ workflow {
 
     paired_end_reads_merged = BBMAP_MERGE_PAIRS(paired_end_reads_pairs, false)
 
+    // prepare a single channel with elements of the form
+    // (meta, [*_1_unmerged.fastq.gz, *_2_unmerged.fastq.gz, *_merged.fastq.gz, "*_singletons.fastq.gz"])
+    // for paired-end and (meta, *.fastq.gz) for single-end samples
+    paired_end_reads = paired_end_reads_singletons.map({ new Tuple (it[0] + [single_end:false], it[1]) })
+    paired_end_reads = paired_end_reads.join(paired_end_reads_merged.merged.join(paired_end_reads_merged.unmerged))
+    paired_end_reads = paired_end_reads.map({ new Tuple (it[0], it[3] + [it[2]] + [it[1]]) })
+    preprocessed_samples = single_end_reads.mix(paired_end_reads)
+
     /*
     motus_paired_end(preprocessed_paired)
     motus_single_end(preprocessed_single)
