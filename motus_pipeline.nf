@@ -8,37 +8,8 @@ include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_PAIRS } from './modules/nf
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
 include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbmerge/main'
+include { MOTUS_PROFILE } from './modules/local/motus/main'
 
-
-process motus_paired_end {
-    cpus = 20
-    input:
-        tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.motus")
-
-    script:
-        """
-        motus profile -f $paired_1 -r $paired_2 -s $merged,$singleton_reads\
-        -n $sample_name -c -k mOTU -q -p -t 20 -o ${sample_name}.motus
-        """
-    }
-
-process motus_single_end {
-
-    input:
-        tuple val(sample_name), path(singleton_reads)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.motus")
-
-    script:
-        """
-        motus profile -s $singleton_reads \
-        -n $sample_name -c -k mOTU -q -p -o ${sample_name}.motus
-        """
-    }
 
 process assemble_paired_end {
     cpus = 20
@@ -418,10 +389,8 @@ workflow {
     paired_end_reads = paired_end_reads.map({ new Tuple (it[0], it[3] + [it[2]] + [it[1]]) })
     preprocessed_samples = single_end_reads.mix(paired_end_reads)
 
+    MOTUS_PROFILE(preprocessed_samples)
     /*
-    motus_paired_end(preprocessed_paired)
-    motus_single_end(preprocessed_single)
-
     assembly = assemble_paired_end(preprocessed_paired)
 
     filtered_assembly = filter_short_contigs(assembly)
