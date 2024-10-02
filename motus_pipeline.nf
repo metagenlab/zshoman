@@ -13,6 +13,7 @@ include { MOTUS_PROFILE } from './modules/local/motus/main'
 include { SPADES } from './modules/nf-core/spades/main'
 include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
 include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
+include { PHANTA_PROFILE } from './modules/local/phanta/main'
 
 process call_genes {
     cpus = 1
@@ -356,6 +357,8 @@ workflow {
 
     filtered_assembly = FILTER_SCAFFOLDS(scaffolds).scaffolds
     assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+
+    phanta = PHANTA_PROFILE(preprocessed_samples)
 
     /*
 
