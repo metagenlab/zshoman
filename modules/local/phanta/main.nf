@@ -3,7 +3,7 @@ process PHANTA_PROFILE {
     label 'process_high'
 
     conda "${moduleDir}/environment.yml"
-    container "metagenlab/phanta:1.1"
+    container "docker://metagenlab/phanta:1.1"
 
     input:
     tuple val(meta), path(reads)
