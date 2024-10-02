@@ -351,7 +351,8 @@ workflow {
     paired_end_reads = paired_end_reads.map({ new Tuple (it[0], it[3] + [it[2]] + [it[1]]) })
     preprocessed_samples = single_end_reads.mix(paired_end_reads)
 
-    motus_profilles = MOTUS_PROFILE(preprocessed_samples).motus
+
+    motus_profilles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
 
     scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
 

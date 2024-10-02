@@ -9,6 +9,7 @@ process MOTUS_PROFILE {
 
     input:
     tuple val(meta), path(reads)
+    path(motus_db)
 
     output:
     tuple val(meta), path('*.motus'), emit: motus
@@ -23,13 +24,13 @@ process MOTUS_PROFILE {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def input = meta.single_end ? "-s ${reads[0]}" : "-f ${reads[0]} -r ${reads[1]} -s ${reads[2]},${reads[3]}"
     """
-    motus downloadDB  # does nothing if DB is already downloaded
     motus profile \\
         $input \\
         -n $meta.id \\
         $args \\
         -o ${prefix}.motus \\
-        -t $task.cpus\\
+        -t $task.cpus \\
+	-db $motus_db \\
         &> ${prefix}.motus.log
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
