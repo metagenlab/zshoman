@@ -359,7 +359,7 @@ workflow {
     filtered_assembly = FILTER_SCAFFOLDS(scaffolds).scaffolds
     assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
-    phanta = PHANTA_PROFILE(preprocessed_samples)
+    phanta = PHANTA_PROFILE(preprocessed_samples, params.phanta_db)
 
     /*
 
