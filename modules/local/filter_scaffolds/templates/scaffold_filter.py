@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+"""
+This script is adapted from
+https://methods-in-microbiomics.readthedocs.io/en/latest/_downloads/a980f6f4bd1d2d49e4965aed8af17fde/scaffold_filter.py
+"""
 import gzip
 import hashlib
 
@@ -19,23 +25,14 @@ def stream_fa(infile):
 
 
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description='Contig/Scaffold/Transcript filter')
-    parser.add_argument('samplename', type=str, help='name of sample')
-    parser.add_argument('seqtype', type=str, help='Type of input sequence', choices=['contigs', 'scaffolds', 'transcripts'])
-    parser.add_argument('infile', type=str, help='Input Sequence file. Either fasta or fasta.gz.')
-    parser.add_argument('outprefix', type=str, help='Prefix for output files.')
-    args = parser.parse_args()
-
-    samplename = args.samplename
-    seqtype = args.seqtype[:-1]
+    samplename = "$meta.id"
+    seqtype = "scaffold"
     filtersize = 500
 
-    infile = args.infile
-    outprefix = args.outprefix + '/' + samplename
+    outprefix = "$task.ext.prefix" if "$task.ext.prefix" != "null" else samplename
     sequences = []
 
-    for cnt, (header, sequence) in enumerate(stream_fa(infile), 1):
+    for cnt, (header, sequence) in enumerate(stream_fa("$scaffolds"), 1):
         sequence = sequence.upper()
         seqlen = len(sequence)
         sequence_rev = str(Seq(sequence).reverse_complement())
@@ -47,12 +44,12 @@ def main():
     with open(f'{outprefix}.{seqtype}s.min{filtersize}.fasta', 'w') as handle:
         for (seqname, sequence, md5_fw, md5_rev, seqlen) in sequences:
             if seqlen >= filtersize:
-                handle.write(f'>{seqname}\n{sequence}\n')
+                handle.write(f'>{seqname}\\n{sequence}\\n')
 
     with open(f'{outprefix}.{seqtype}s.hashes', 'w') as handle:
         for (seqname, sequence, md5_fw, md5_rev, seqlen) in sequences:
             if seqlen >= filtersize:
-                handle.write(f'{seqname}\t{md5_fw}\t{md5_rev}\t{seqlen}\n')
+                handle.write(f'{seqname}\\t{md5_fw}\\t{md5_rev}\\t{seqlen}\\n')
 
 
 if __name__ == '__main__':

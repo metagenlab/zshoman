@@ -1,172 +1,19 @@
 #!/usr/bin/env nextflow
 
-process index_host_genome {
-    cpus = 1
-    output:
-        path("host_bbmap_ref")
-
-    script:
-        """
-        # Filtering out human host reads
-        bbmap.sh -Xmx23g ref=$params.references.masked_human path="host_bbmap_ref" 2>> prepare_index.log
-        """
-    }
-
-
-process preprocess_paired_end {
-    cpus = 8
-    input:
-        tuple val(sample_name), path(file1), path(file2)
-        path(host_bbmap_ref)
-
-    output:
-        tuple val(sample_name), path("merged.fq.gz"), path("R1.fq.gz"), path("R2.fq.gz"), path("singleton_reads.fq.gz")
-
-    script:
-        """
-        # adapter trimming
-        bbduk.sh -Xmx1G usejni=t in=$file1 in2=$file2 out=stdout.fq \
-        refstats=adapter_trim.stats statscolumns=5 overwrite=t ref=$params.references.adapters \
-        ktrim=r k=23 mink=11 hdist=1 t=8 2>> preprocessing.log | \
-
-        # contaminant filtering
-        bbduk.sh -Xmx1G usejni=t interleaved=true overwrite=t \
-        in=stdin.fq out=stdout.fq ref=$params.references.phix \
-        k=31 hdist=1 refstats=phix.stats statscolumns=5 t=8 2>> preprocessing.log | \
-
-        # quality filtering. We also retain singleton reads that pass the filter
-        # i.e. when only one of a paired end read passes,
-        # we retain just that one in singleton_reads_qf.fq.gz
-        bbduk.sh -Xmx1G usejni=t overwrite=t interleaved=true \
-        in=stdin.fq out=qf.fasta.gz minlength=45 qtrim=rl maq=20 maxns=1 \
-        stats=qc.stats statscolumns=5 trimq=14 outs=singleton_reads_qf.fq.gz t=8 2>> preprocessing.log
-
-        # Filtering out human host reads
-        bbmap.sh -Xmx24g usejni=t interleaved=true overwrite=t \
-        qin=33 minid=0.95 maxindel=3 bwr=0.16 bw=12 quickmatch fast \
-        minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=qf.fasta.gz \
-        out=stdout.fq t=8 2>> removeHost.log |
-
-        # Merging overlapping paired-end reads
-        bbmerge.sh -Xmx24G interleaved=true in=stdin.fq out=merged.fq.gz \
-        outu1=R1.fq.gz outu2=R2.fq.gz minoverlap=16 usejni=t \
-        ihist=Sample1.merge.hist &> merge.log
-
-        # Filtering out human host reads for singleton reads
-        bbmap.sh -Xmx24g usejni=t threads=24 overwrite=t qin=33 minid=0.95 maxindel=3 \
-        bwr=0.16 bw=12 quickmatch fast minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 \
-        untrim=t in=singleton_reads_qf.fq.gz outu=singleton_reads.fq.gz t=8 2>> out.rmHost.log
-        """
-    }
-
-process preprocess_single_end {
-
-    input:
-        tuple val(sample_name), path(file1)
-        path(host_bbmap_ref)
-
-    output:
-        tuple val(sample_name), path("singleton_reads.fq.gz")
-
-    script:
-        """
-        # adapter trimming
-        bbduk.sh -Xmx1G usejni=t in=$file1 out=stdout.fq \
-        refstats=adapter_trim.stats statscolumns=5 overwrite=t ref=$params.references.adapters \
-        ktrim=r k=23 mink=11 hdist=1 t=20 2>> preprocessing.log | \
-
-        # contaminant filtering
-        bbduk.sh -Xmx1G usejni=t interleaved=false overwrite=t \
-        in=stdin.fq out=stdout.fq ref=$params.references.phix \
-        k=31 hdist=1 refstats=phix.stats statscolumns=5 t=20 2>> preprocessing.log | \
-
-        # quality filtering.
-        # we retain just that one in singleton_reads_qf.fq.gz
-        bbduk.sh -Xmx1G usejni=t overwrite=t interleaved=false \
-        in=stdin.fq out=qf.fasta.gz minlength=45 qtrim=rl maq=20 maxns=1 \
-        stats=qc.stats statscolumns=5 trimq=14 t=20 2>> preprocessing.log
-
-        # Filtering out human host reads
-        bbmap.sh -Xmx24g usejni=t interleaved=false overwrite=t \
-        qin=33 minid=0.95 maxindel=3 bwr=0.16 bw=12 quickmatch fast \
-        minhits=2 path=$host_bbmap_ref qtrim=rl trimq=15 untrim in=qf.fasta.gz \
-        outu=singleton_reads.fq.gz t=20 2>> removeHost.log
-        """
-    }
-
-process motus_paired_end {
-    cpus = 20
-    input:
-        tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.motus")
-
-    script:
-        """
-        motus profile -f $paired_1 -r $paired_2 -s $merged,$singleton_reads\
-        -n $sample_name -c -k mOTU -q -p -t 20 -o ${sample_name}.motus
-        """
-    }
-
-process motus_single_end {
-
-    input:
-        tuple val(sample_name), path(singleton_reads)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.motus")
-
-    script:
-        """
-        motus profile -s $singleton_reads \
-        -n $sample_name -c -k mOTU -q -p -o ${sample_name}.motus
-        """
-    }
-
-process assemble_paired_end {
-    cpus = 20
-    memory '250 GB'
-    input:
-        tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
-
-    output:
-        tuple val(sample_name), path("assembly")
-
-    script:
-        """
-        mkdir assembly
-        metaspades.py -t ${task.cpus} -m ${task.memory.toGiga()} --only-assembler --pe-1 1 $paired_1 --pe-2 1 $paired_2 --pe-m 1 $merged --pe-s 1 $singleton_reads -o assembly
-        """
-    }
-
-process filter_short_contigs {
-    cpus = 1
-    input:
-        tuple val(sample_name), path(assembly)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.scaffolds.min500.fasta")
-
-    script:
-        """
-        python $params.scaffold_filtering_script $sample_name scaffolds $assembly/scaffolds.fasta .
-        """
-    }
-
-process get_assembly_stats {
-    cpus = 1
-    input:
-        tuple val(sample_name), path(filtered_assembly)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.stats")
-
-    script:
-        """
-        assembly-stats -l 500 -t <(cat $filtered_assembly) > ${sample_name}.stats
-        """
-    }
+include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING_SINGLE_END } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING_PAIRED_END } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_ALIGN as BBMAP_FILTER_HOST_SINGLE_END } from './modules/nf-core/bbmap/align/main'
+include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_PAIRS } from './modules/nf-core/bbmap/align/main'
+include { BBMAP_ALIGN as BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS } from './modules/nf-core/bbmap/align/main'
+include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
+include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbmerge/main'
+include { MOTUS_PROFILE } from './modules/local/motus/main'
+include { SPADES } from './modules/nf-core/spades/main'
+include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
+include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
+include { PHANTA_PROFILE } from './modules/local/phanta/main'
 
 process call_genes {
     cpus = 1
@@ -444,23 +291,79 @@ workflow {
     samples = input_file
         .splitCsv(header: false, strip: false, limit: 1662)
 
-    paired_end_samples = samples.filter( { it[2].strip() } )
-    single_end_samples = samples.filter( { !it[2].strip() } ).map( {row -> new Tuple (row[0], row[1])})
+    // prepare metadata for samples to distinguish single from paired-end reads
+    samples = samples.map( {
+        row ->
+            if (!row[2].strip()) {
+                return new Tuple ([ id:row[0], single_end:true ], [ row[1] ])
+            } else {
+                return new Tuple ([ id:row[0], single_end:false ], [ row[1], row[2] ])
+            }
+        })
 
-    host_bbmap_ref = index_host_genome()
+    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.references.adapters).reads
+    phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix).reads
 
-    preprocessed_paired = preprocess_paired_end(paired_end_samples, host_bbmap_ref)
-    motus_paired_end(preprocessed_paired)
+    // here we split up paired-end and single-end samples, as we will need to
+    // treat them separately because we kep the singletons for the paired-end
+    // reads.
+    phix_filtered_reads = phix_filtered_reads.branch(
+        {
+            single_end: it[0].single_end
+            paired_end: !it[0].single_end
+        })
 
-    preprocessed_single = preprocess_single_end(single_end_samples, host_bbmap_ref)
+    qf_reads_single = BBDUK_QUALITY_FILTERING_SINGLE_END(phix_filtered_reads.single_end, []).reads
+    qf_reads_paired = BBDUK_QUALITY_FILTERING_PAIRED_END(phix_filtered_reads.paired_end, []).reads
 
-    motus_single_end(preprocessed_single)
+    // Sort the files for paired-end reads -> (*_1, *_2, singletons)
+    def compare_files = { a, b ->
+        if (a.toString().endsWith("_1.fastq.gz")) {
+            return -1
+        } else if (a.toString().endsWith("singleton_reads_qf.fastq.gz")) {
+            return 1
+        } else if (b.toString().endsWith("_1.fastq.gz")) {
+            return 1
+        } else {
+            return -1
+        }
+    }
 
-    assembly = assemble_paired_end(preprocessed_paired)
+    qf_reads_paired = qf_reads_paired.map( { new Tuple (it[0], it[1].sort(compare_files)) } )
+    qf_reads_paired = qf_reads_paired.multiMap(
+        {
+            pairs: new Tuple (it[0], [it[1][0], it[1][1]])
+            singletons: new Tuple (it[0] + [single_end:true], [it[1][2]])
+        })
 
-    filtered_assembly = filter_short_contigs(assembly)
+    host_index = BBMAP_INDEX_HOST(params.references.masked_human)
+    single_end_reads = BBMAP_FILTER_HOST_SINGLE_END(qf_reads_single, host_index.index).reads
+    paired_end_reads_pairs = BBMAP_FILTER_HOST_PAIRED_END_PAIRS(qf_reads_paired.pairs, host_index.index).reads
+    paired_end_reads_singletons = BBMAP_FILTER_HOST_PAIRED_END_SINGLETONS(qf_reads_paired.singletons, host_index.index).reads
 
-    assembly_stats = get_assembly_stats(filtered_assembly)
+    paired_end_reads_merged = BBMAP_MERGE_PAIRS(paired_end_reads_pairs, false)
+
+    // prepare a single channel with elements of the form
+    // (meta, [*_1_unmerged.fastq.gz, *_2_unmerged.fastq.gz, *_merged.fastq.gz, "*_singletons.fastq.gz"])
+    // for paired-end and (meta, *.fastq.gz) for single-end samples
+    paired_end_reads = paired_end_reads_singletons.map({ new Tuple (it[0] + [single_end:false], it[1]) })
+    paired_end_reads = paired_end_reads.join(paired_end_reads_merged.merged.join(paired_end_reads_merged.unmerged))
+    paired_end_reads = paired_end_reads.map({ new Tuple (it[0], it[3] + [it[2]] + [it[1]]) })
+    preprocessed_samples = single_end_reads.mix(paired_end_reads)
+
+
+    motus_profilles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
+
+    scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+
+    filtered_assembly = FILTER_SCAFFOLDS(scaffolds).scaffolds
+    assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+
+    if (!params.skip_phanta) {
+        phanta = PHANTA_PROFILE(preprocessed_samples, params.phanta_db)
+    }
+
+    /*
 
     genes = call_genes(filtered_assembly)
 
@@ -497,6 +400,7 @@ workflow {
     collect_counts(counts)
     collect_cogs(merged_cogs)
     collect_gene_catalog(gene_catalog_aa)
+    */
 }
 
 workflow.onComplete {

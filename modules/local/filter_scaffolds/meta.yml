@@ -1,0 +1,46 @@
+name: filter_scaffolds
+description: Filter short contigs from scaffolds.
+keywords:
+  - assembly
+  - genome
+  - metagenome
+tools:
+  - custom:
+      description: Custom module to filter out short contigs from scaffolds.
+      tool_dev_url: https://github.com/metagenlab/scripts/tree/main/CIDB/motus_pipeline/modules/local/filter_scaffolds/main.nf
+      licence: [""]
+      identifier: "filter_scaffolds"
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test', single_end:false ]
+    - scaffoldss:
+        type: path
+        description: scaffolds file.
+output:
+  - scaffolds:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - "sample_id.scaffolds.min500.fasta":
+          type: file
+          description: filtered scaffolds
+          pattern: "${meta.id}.scaffolds.min500.fasta"
+  - log:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - "*.log":
+          type: file
+          description: motus log file
+          pattern: "*.filter_scaffolds.log"
+authors:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
+maintainers:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
