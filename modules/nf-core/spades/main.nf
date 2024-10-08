@@ -18,7 +18,8 @@ process SPADES {
     tuple val(meta), path('*.transcripts.fa.gz')  , optional:true, emit: transcripts
     tuple val(meta), path('*.gene_clusters.fa.gz'), optional:true, emit: gene_clusters
     tuple val(meta), path('*.assembly.gfa.gz')    , optional:true, emit: gfa
-    tuple val(meta), path('*.warnings.log')         , optional:true, emit: warnings
+    tuple val(meta), path('*.scaffolds.paths.gz') , optional:true, emit: assembly_paths
+    tuple val(meta), path('*.warnings.log')       , optional:true, emit: warnings
     tuple val(meta), path('*.spades.log')         , emit: log
     path  "versions.yml"                          , emit: versions
 
@@ -64,6 +65,11 @@ process SPADES {
     if [ -f gene_clusters.fasta ]; then
         mv gene_clusters.fasta ${prefix}.gene_clusters.fa
         gzip -n ${prefix}.gene_clusters.fa
+    fi
+
+    if [ -f scaffolds.paths ]; then
+        mv scaffolds.paths ${prefix}.scaffolds.paths
+        gzip -n ${prefix}.scaffolds.paths
     fi
 
     if [ -f warnings.log ]; then
