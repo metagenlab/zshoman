@@ -1,4 +1,4 @@
-process 4CAC {
+process CLASSIFY_4CAC {
     tag "$meta.id"
     label 'process_low'
 

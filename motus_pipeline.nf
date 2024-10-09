@@ -14,7 +14,7 @@ include { SPADES } from './modules/nf-core/spades/main'
 include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
 include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
 include { PHANTA_PROFILE } from './modules/local/phanta/main'
-include { 4CAC } from './modules/local/4CAC/main'
+include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 
 process call_genes {
     cpus = 1
@@ -365,7 +365,7 @@ workflow {
     }
     if (!params.skip_dev) {
         assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
-        4CAC(assembly_graph_and_paths)
+        CLASSIFY_4CAC(assembly_graph_and_paths)
     }
 
     /*
