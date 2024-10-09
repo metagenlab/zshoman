@@ -8,10 +8,12 @@ process FILTER_SCAFFOLDS {
         'biocontainers/biopython:1.81' }"
 
     input:
-    tuple val(meta), path(scaffolds)
+    tuple val(meta), path(scaffolds), path(classification)
 
     output:
-    tuple val(meta), path("${meta.id}.scaffolds.min500.fasta"), emit: scaffolds
+    tuple val(meta), path("${meta.id}.scaffolds.min500.fasta"), emit: all_scaffolds
+    tuple val(meta), path("${meta.id}.scaffolds.min500_eukaryotes.fasta"), emit: prok_scaffolds
+    tuple val(meta), path("${meta.id}.scaffolds.min500_prokaryotes.fasta"), emit: euk_scaffolds
 
     when:
     task.ext.when == null || task.ext.when

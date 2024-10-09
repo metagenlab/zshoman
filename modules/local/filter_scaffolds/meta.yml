@@ -16,20 +16,43 @@ input:
         description: |
           Groovy Map containing sample information
           e.g. [ id:'test', single_end:false ]
-    - scaffoldss:
+    - scaffolds:
         type: path
         description: scaffolds file.
+    - classification:
+        type: path
+        description: contig classification file.
 output:
-  - scaffolds:
+  - all_scaffolds:
       - meta:
           type: map
           description: |
             Groovy Map containing sample information
             e.g. [ id:'test', single_end:false ]
-      - "sample_id.scaffolds.min500.fasta":
+      - scaffolds:
           type: file
           description: filtered scaffolds
           pattern: "${meta.id}.scaffolds.min500.fasta"
+  - euk_scaffolds:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - scaffolds:
+          type: file
+          description: filtered eukaryotic scaffolds
+          pattern: "${meta.id}.scaffolds.min500_prokaryotes.fasta"
+  - prok_scaffolds:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - scaffolds:
+          type: file
+          description: filtered prokaryotic scaffolds
+          pattern: "${meta.id}.scaffolds.min500_eukaryotes.fasta"
   - log:
       - meta:
           type: map

@@ -355,18 +355,17 @@ workflow {
 
     motus_profilles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
 
-    scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
-
-    filtered_assembly = FILTER_SCAFFOLDS(scaffolds).scaffolds
-    assembly_stats = ASSEMBLY_STATS(filtered_assembly)
-
     if (!params.skip_phanta) {
         phanta = PHANTA_PROFILE(preprocessed_samples, params.phanta_db)
     }
-    if (!params.skip_dev) {
-        assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
-        CLASSIFY_4CAC(assembly_graph_and_paths)
-    }
+
+    scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+
+    assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
+    contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
+
+    filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
+    assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
     /*
 
