@@ -1,17 +1,17 @@
-name: motus_profile
-description: Taxonomic profiling using mOTUs
+name: phanta_profile
+description: Taxonomic profiling using phanta
 keywords:
   - metagenome
   - taxonomic
   - profiling
   - abundance
 tools:
-  - motus:
-      description: mOTUs is a single copy marker gene based approach for taxonomic profiling of metagenomic data.
-      homepage: https://github.com/motu-tool/mOTUs
-      documentation: https://github.com/motu-tool/mOTUs/wiki
-      licence: ["GNU General Public License v3.0"]
-      identifier: motus
+  - phanta:
+      description: Rapidly quantify taxa from all domains of life, directly from short-read human gut metagenomes.
+      homepage: https://github.com/metagenlab/phanta
+      documentation: https://github.com/metagenlab/phanta
+      licence: ["MIT License"]
+      identifier: phanta
 input:
   - - meta:
         type: map
@@ -23,17 +23,20 @@ input:
         description: |
           List of input FastQ files of size 1 for single-end data and 4
           (unmerged_1, unmerged_2, merged, singletons) for paired-end data.
+    - phanta_db:
+        type: path
+        description: Path to phanta database.
 output:
-  - motus:
+  - classification:
       - meta:
           type: map
           description: |
             Groovy Map containing sample information
             e.g. [ id:'test', single_end:false ]
-      - "*.motus":
+      - profile:
           type: file
-          description: motus profile file
-          pattern: "*.motus"
+          description: phanta profile file
+          pattern: "final_merged_outputs/*.txt"
   - log:
       - meta:
           type: map
@@ -44,11 +47,6 @@ output:
           type: file
           description: motus log file
           pattern: "*.motus.log"
-  - versions:
-      - versions.yml:
-          type: file
-          description: File containing software versions
-          pattern: "versions.yml"
 authors:
   - "Niklaus Johner (niklaus.johner@chuv.ch)"
 maintainers:
