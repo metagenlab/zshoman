@@ -23,6 +23,9 @@ input:
         description: |
           List of input FastQ files of size 1 for single-end data and 4
           (unmerged_1, unmerged_2, merged, singletons) for paired-end data.
+    - motus_db:
+        type: path
+        description: Path to motus database.
 output:
   - motus:
       - meta:
