@@ -33,7 +33,7 @@ process CLASSIFY_4CAC {
 
     python ${params.fourcac_dir}/classify_4CAC.py \\
     --assembler metaSPAdes \\
-    --asmdir . \\
+    --asmdir ./ \\
     $args2 \\
     &>> ${prefix}.4cac.log
     """
