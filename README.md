@@ -12,4 +12,4 @@ To run the pipeline on obelix:
 - start a screen
 - get an allocation for running nextflow (`salloc --cpus-per-task=1 --partition=long`)
 - activate nextflow environment `conda activate nextflow`
-- run the pipeline `nextflow run ../scripts/CIDB/motus_pipeline/motus_pipeline.nf --input samples_test.csv --phanta_db /mnt/slow_storage/databases/phanta/unmasked_db_v1/ -profile apptainer -e.cpus=60 -process.executor=slurm -process.queue=short --max_time="4.h" --db_dir /mnt/slow_storage/users/njohner/CIDB/Analysis/DB/motus_pipeline/ -resume --motus_db=/mnt/slow_storage/databases/db_mOTU/ --skip_phanta=false --skip_dev=false`
+- run the pipeline `nextflow run ../scripts/CIDB/motus_pipeline/motus_pipeline.nf --input samples_test.csv --phanta_db /mnt/slow_storage/databases/phanta/unmasked_db_v1/ -profile apptainer -e.cpus=60 -process.executor=slurm -process.queue=short --max_time="4.h" --db_dir /mnt/slow_storage/users/njohner/CIDB/Analysis/DB/motus_pipeline/ -resume --motus_db=/mnt/slow_storage/databases/db_mOTU/ --skip_phanta=false --skip_dev=false --microeuk_db /mnt/slow_storage/databases/MicroEuk_v3/`

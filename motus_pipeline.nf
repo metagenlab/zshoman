@@ -16,6 +16,7 @@ include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
 include { PHANTA_PROFILE } from './modules/local/phanta/main'
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 include { PRODIGAL } from './modules/nf-core/prodigal/main'
+include { METAEUK_EASYPREDICT } from './modules/nf-core/metaeuk/easypredict/main'
 
 
 process make_gene_catalog {
@@ -355,6 +356,7 @@ workflow {
     assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
     prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
+    eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
 
     /*
     amino_acids = genes.collectFile( {row ->  [ "genes.faa", row[1] ]} )
