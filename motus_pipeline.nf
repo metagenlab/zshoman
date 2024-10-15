@@ -21,27 +21,6 @@ include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
 include { GET_HEADERS } from './modules/local/seq_headers/main'
 include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
 
-process make_gene_catalog {
-    cpus = 20
-    input:
-        path(amino_acids)
-        path(nucleotides)
-
-    output:
-        path("cdhit9590")
-
-    script:
-        """
-        mkdir cdhit9590
-        cd-hit-est -i $nucleotides -o cdhit9590/gene_catalog_cdhit9590.fasta \
-        -c 0.95 -T 20 -M 0 -G 0 -aS 0.9 -g 1 -r 1 -d 0
-
-        grep "^>" cdhit9590/gene_catalog_cdhit9590.fasta | \
-        cut -f 2 -d ">" | \
-        cut -f 1 -d " " > cdhit9590/cdhit9590.headers
-        seqtk subseq $amino_acids cdhit9590/cdhit9590.headers > cdhit9590/gene_catalog_cdhit9590.faa
-        """
-    }
 
 process align_reads {
     cpus = 20
