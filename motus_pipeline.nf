@@ -358,9 +358,16 @@ workflow {
     prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
     eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
 
+    // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
+    amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes.faa)
+                    .collectFile( {row ->  [ "genes.faa", row[1] ]} )
+                    .map( { new Tuple({id: 'all'}, it )} )
+    nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes.codon)
+                    .collectFile( {row ->  [ "genes.fna", row[1] ]} )
+                    .map( { new Tuple({id: 'all'}, it )} )
+
+
     /*
-    amino_acids = genes.collectFile( {row ->  [ "genes.faa", row[1] ]} )
-    nucleotides = genes.collectFile( {row ->  [ "genes.fna", row[2] ]} )
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
 
     aligned_reads = align_reads(gene_catalog, preprocessed_paired)
