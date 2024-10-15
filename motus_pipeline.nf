@@ -21,6 +21,8 @@ include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
 include { GET_HEADERS } from './modules/local/seq_headers/main'
 include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
 include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
+include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
+
 
 process align_reads {
     cpus = 20
@@ -353,6 +355,9 @@ workflow {
     SEQTK_SUBSEQ(amino_acids, headers.first()[1])
 
     catalog_index = BWA_INDEX(gene_catalog_nt).index
+
+    // Make sure we have a single fastq file for all reads per sample
+    reads = CAT_FASTQ(preprocessed_samples).reads
 
     /*
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
