@@ -10,7 +10,7 @@ process PHANTA_PROFILE {
     path(phanta_db)
 
     output:
-    tuple val(meta), path('final_merged_outputs/*.txt'), emit: motus
+    tuple val(meta), path('final_merged_outputs/*.txt'), emit: classification
     tuple val(meta), path("*.phanta.log"), emit: log
 
     when:
@@ -27,6 +27,7 @@ process PHANTA_PROFILE {
     -p $params.phanta_dir \\
     -d $phanta_db \\
     -o ./ \\
+    -t $task.cpus \\
     --run \\
     $suffixes \\
     $args \\

@@ -1,31 +1,34 @@
-name: phanta_profile
-description: Taxonomic profiling using phanta
+name: 4CAC
+description: 4 class classification of contigs.
 keywords:
   - metagenome
-  - taxonomic
-  - profiling
-  - abundance
+  - classification
 tools:
-  - phanta:
-      description: Rapidly quantify taxa from all domains of life, directly from short-read human gut metagenomes.
-      homepage: https://github.com/metagenlab/phanta
-      documentation: https://github.com/metagenlab/phanta
+  - 4cac:
+      description: 4CAC is a four-class classifier designed to classify contigs in mixed metagenome
+          assemblies as phages, plasmids, prokaryotes (bacteria and archaea), microeukaryote
+          (fungi and protozoa) or uncertain.
+      homepage: https://github.com/Shamir-Lab/4CAC
+      documentation: https://github.com/Shamir-Lab/4CAC
       licence: ["MIT License"]
-      identifier: phanta
+      identifier: 4cac
 input:
   - - meta:
         type: map
         description: |
           Groovy Map containing sample information
           e.g. [ id:'test', single_end:false ]
-    - reads:
+    - contigs:
         type: path
         description: |
           List of input FastQ files of size 1 for single-end data and 4
           (unmerged_1, unmerged_2, merged, singletons) for paired-end data.
-    - phanta_db:
+    - graph:
         type: path
-        description: Path to phanta database.
+        description: Assembly graph
+    - paths:
+        type: path
+        description: Assembly paths
 output:
   - classification:
       - meta:
@@ -33,10 +36,10 @@ output:
           description: |
             Groovy Map containing sample information
             e.g. [ id:'test', single_end:false ]
-      - profile:
+      - contig_classification:
           type: file
-          description: phanta profile file
-          pattern: "final_merged_outputs/*.txt"
+          description: Contig classification
+          pattern: "4CAC_classification.fasta"
   - log:
       - meta:
           type: map
@@ -45,8 +48,8 @@ output:
             e.g. [ id:'test', single_end:false ]
       - "*.log":
           type: file
-          description: motus log file
-          pattern: "*.motus.log"
+          description: 4cac log file
+          pattern: "*.4cac.log"
 authors:
   - "Niklaus Johner (niklaus.johner@chuv.ch)"
 maintainers:

@@ -14,21 +14,10 @@ include { SPADES } from './modules/nf-core/spades/main'
 include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
 include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
 include { PHANTA_PROFILE } from './modules/local/phanta/main'
+include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
+include { PRODIGAL } from './modules/nf-core/prodigal/main'
+include { METAEUK_EASYPREDICT } from './modules/nf-core/metaeuk/easypredict/main'
 
-process call_genes {
-    cpus = 1
-    input:
-        tuple val(sample_name), path(filtered_assembly)
-
-    output:
-        tuple val(sample_name), path("${sample_name}.faa"), path("${sample_name}.fna"), path("${sample_name}.gff")
-
-    script:
-        """
-        prodigal -a ${sample_name}.faa -d ${sample_name}.fna -f gff \
-        -o ${sample_name}.gff -c -q -p meta -i $filtered_assembly
-        """
-    }
 
 process make_gene_catalog {
     cpus = 20
@@ -354,19 +343,22 @@ workflow {
 
     motus_profilles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
 
-    scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
-
-    filtered_assembly = FILTER_SCAFFOLDS(scaffolds).scaffolds
-    assembly_stats = ASSEMBLY_STATS(filtered_assembly)
-
     if (!params.skip_phanta) {
         phanta = PHANTA_PROFILE(preprocessed_samples, params.phanta_db)
     }
 
+    scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+
+    assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
+    contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
+
+    filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
+    assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+
+    prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
+    eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
+
     /*
-
-    genes = call_genes(filtered_assembly)
-
     amino_acids = genes.collectFile( {row ->  [ "genes.faa", row[1] ]} )
     nucleotides = genes.collectFile( {row ->  [ "genes.fna", row[2] ]} )
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
