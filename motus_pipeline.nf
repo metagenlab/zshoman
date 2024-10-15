@@ -17,7 +17,7 @@ include { PHANTA_PROFILE } from './modules/local/phanta/main'
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 include { PRODIGAL } from './modules/nf-core/prodigal/main'
 include { METAEUK_EASYPREDICT } from './modules/nf-core/metaeuk/easypredict/main'
-
+include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
 
 process make_gene_catalog {
     cpus = 20
@@ -366,6 +366,7 @@ workflow {
                     .collectFile( {row ->  [ "genes.fna", row[1] ]} )
                     .map( { new Tuple({id: 'all'}, it )} )
 
+    gene_catalog_nt = CDHIT_CDHITEST(nucleotides).fasta
 
     /*
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
