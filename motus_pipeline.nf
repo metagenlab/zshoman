@@ -20,7 +20,7 @@ include { METAEUK_EASYPREDICT } from './modules/nf-core/metaeuk/easypredict/main
 include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
 include { GET_HEADERS } from './modules/local/seq_headers/main'
 include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
-
+include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
 
 process align_reads {
     cpus = 20
@@ -351,6 +351,9 @@ workflow {
 
     headers = GET_HEADERS(gene_catalog_nt).headers
     SEQTK_SUBSEQ(amino_acids, headers.first()[1])
+
+    catalog_index = BWA_INDEX(gene_catalog_nt).index
+
     /*
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
 
