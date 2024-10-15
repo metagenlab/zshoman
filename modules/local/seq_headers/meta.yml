@@ -1,0 +1,30 @@
+name: seq_headers
+description: Get sequence headers from fasta file.
+keywords:
+  - sequence
+tools:
+  - grep:
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test', single_end:false ]
+    - alignment:
+        type: path
+        description: Alignment file
+output:
+  - headers:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - headers:
+          type: file
+          description: Sequence headers
+          pattern: "*.headers"
+authors:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
+maintainers:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
