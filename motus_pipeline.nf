@@ -20,37 +20,10 @@ include { METAEUK_EASYPREDICT } from './modules/nf-core/metaeuk/easypredict/main
 include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
 include { GET_HEADERS } from './modules/local/seq_headers/main'
 include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
-include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
 include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
+include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
+include { BWA_MEM } from './modules/nf-core/bwa/mem/main'
 
-
-process align_reads {
-    cpus = 20
-    input:
-        path(gene_catalog)
-        tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
-
-    output:
-        tuple val(sample_name), path("alignments")
-
-    script:
-        """
-        mkdir alignments
-        bwa index $gene_catalog/gene_catalog_cdhit9590.fasta
-
-        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $paired_1 \
-        | samtools view -F 4 -bh - > alignments/${sample_name}_r1.bam
-
-        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $paired_2 \
-        | samtools view -F 4 -bh - > alignments/${sample_name}_r2.bam
-
-        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $merged \
-        | samtools view -F 4 -bh - > alignments/${sample_name}_merged.bam
-
-        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $singleton_reads \
-        | samtools view -F 4 -bh - > alignments/${sample_name}_singleton.bam
-        """
-    }
 
 process filter_reads {
     cpus = 5
@@ -354,10 +327,11 @@ workflow {
     headers = GET_HEADERS(gene_catalog_nt).headers
     SEQTK_SUBSEQ(amino_acids, headers.first()[1])
 
-    catalog_index = BWA_INDEX(gene_catalog_nt).index
-
     // Make sure we have a single fastq file for all reads per sample
     reads = CAT_FASTQ(preprocessed_samples).reads
+
+    catalog_index = BWA_INDEX(gene_catalog_nt).index
+    aligned_reads = BWA_MEM(reads, catalog_index.first(), null, false).bam
 
     /*
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
