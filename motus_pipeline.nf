@@ -317,21 +317,21 @@ workflow {
     // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
     amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes.faa)
                     .collectFile( {row ->  [ "genes.faa", row[1] ]} )
-                    .map( { new Tuple({id: 'all'}, it )} )
+                    .map( { new Tuple([id: 'all'], it )} )
     nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes.codon)
                     .collectFile( {row ->  [ "genes.fna", row[1] ]} )
-                    .map( { new Tuple({id: 'all'}, it )} )
+                    .map( { new Tuple([id: 'all'], it )} )
 
     gene_catalog_nt = CDHIT_CDHITEST(nucleotides).fasta
 
     headers = GET_HEADERS(gene_catalog_nt).headers
-    SEQTK_SUBSEQ(amino_acids, headers.first()[1])
+    SEQTK_SUBSEQ(amino_acids, headers.map( { it[1] } ).first())
 
     // Make sure we have a single fastq file for all reads per sample
-    reads = CAT_FASTQ(preprocessed_samples).reads
+    reads = CAT_FASTQ(preprocessed_samples, true).reads
 
     catalog_index = BWA_INDEX(gene_catalog_nt).index
-    aligned_reads = BWA_MEM(reads, catalog_index.first(), null, false).bam
+    aligned_reads = BWA_MEM(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
 
     /*
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)

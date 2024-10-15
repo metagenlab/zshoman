@@ -9,6 +9,7 @@ process CAT_FASTQ {
 
     input:
     tuple val(meta), path(reads, stageAs: "input*/*")
+    val force_single
 
     output:
     tuple val(meta), path("*.merged.fastq.gz"), emit: reads
@@ -21,7 +22,7 @@ process CAT_FASTQ {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def readList = reads instanceof List ? reads.collect{ it.toString() } : [reads.toString()]
-    if (meta.single_end) {
+    if (meta.single_end || force_single) {
         if (readList.size >= 1) {
             """
             cat ${readList.join(' ')} > ${prefix}.merged.fastq.gz

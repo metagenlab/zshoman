@@ -21,6 +21,9 @@ input:
         type: file
         description: |
           List of input FastQ files to be concatenated.
+    - force_single:
+        type: boolean
+        description: Whether to also return a single file for paired-end samples.
 output:
   - reads:
       - meta:
