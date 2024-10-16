@@ -1,0 +1,8 @@
+name: filtersam
+channels:
+  - defaults
+  - bioconda
+dependencies:
+  - samtools
+  - pip:
+    - filtersam

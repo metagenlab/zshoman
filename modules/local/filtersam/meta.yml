@@ -1,0 +1,48 @@
+name: filtersam
+description: Filter sam/bam files by percent identity.
+keywords:
+  - bam
+  - sam
+  - filter
+  - sequence identity
+tools:
+  - phanta:
+      description: A Python tool to filter sam/bam files by percent identity or percent of matched sequences.
+      homepage: https://github.com/robaina/filterSAM
+      documentation: https://github.com/robaina/filterSAM
+      licence: ["Apache License"]
+      identifier: filtersam
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test', single_end:false ]
+    - aligned_reads:
+        type: path
+        description: bam or sam file containing sequence alignments
+output:
+  - reads:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - filtered_reads:
+          type: file
+          description: Filtered alignments.
+          pattern: "*.filtersam.log"
+  - log:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - "*.log":
+          type: file
+          description: filtersam log file
+          pattern: "*.filtersam.log"
+authors:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
+maintainers:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"

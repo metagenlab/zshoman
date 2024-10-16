@@ -17,88 +17,14 @@ include { PHANTA_PROFILE } from './modules/local/phanta/main'
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 include { PRODIGAL } from './modules/nf-core/prodigal/main'
 include { METAEUK_EASYPREDICT } from './modules/nf-core/metaeuk/easypredict/main'
-
-
-process make_gene_catalog {
-    cpus = 20
-    input:
-        path(amino_acids)
-        path(nucleotides)
-
-    output:
-        path("cdhit9590")
-
-    script:
-        """
-        mkdir cdhit9590
-        cd-hit-est -i $nucleotides -o cdhit9590/gene_catalog_cdhit9590.fasta \
-        -c 0.95 -T 20 -M 0 -G 0 -aS 0.9 -g 1 -r 1 -d 0
-
-        grep "^>" cdhit9590/gene_catalog_cdhit9590.fasta | \
-        cut -f 2 -d ">" | \
-        cut -f 1 -d " " > cdhit9590/cdhit9590.headers
-        seqtk subseq $amino_acids cdhit9590/cdhit9590.headers > cdhit9590/gene_catalog_cdhit9590.faa
-        """
-    }
-
-process align_reads {
-    cpus = 20
-    input:
-        path(gene_catalog)
-        tuple val(sample_name), path(merged), path(paired_1), path(paired_2), path(singleton_reads)
-
-    output:
-        tuple val(sample_name), path("alignments")
-
-    script:
-        """
-        mkdir alignments
-        bwa index $gene_catalog/gene_catalog_cdhit9590.fasta
-
-        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $paired_1 \
-        | samtools view -F 4 -bh - > alignments/${sample_name}_r1.bam
-
-        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $paired_2 \
-        | samtools view -F 4 -bh - > alignments/${sample_name}_r2.bam
-
-        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $merged \
-        | samtools view -F 4 -bh - > alignments/${sample_name}_merged.bam
-
-        bwa mem -a -t 20 $gene_catalog/gene_catalog_cdhit9590.fasta $singleton_reads \
-        | samtools view -F 4 -bh - > alignments/${sample_name}_singleton.bam
-        """
-    }
-
-process filter_reads {
-    cpus = 5
-    input:
-        tuple val(sample_name), path(alignments)
-
-    output:
-        tuple val(sample_name), path("${sample_name}_filtered.bam")
-
-    script:
-        """
-        samtools merge ${sample_name}.bam ${alignments}/${sample_name}_merged.bam ${alignments}/${sample_name}_r1.bam ${alignments}/${sample_name}_r2.bam ${alignments}/${sample_name}_singleton.bam
-        samtools view -F 256 -e '(qlen-sclen)>45' -O BAM -o filtered_primary.bam ${sample_name}.bam
-        filtersam -i 95 -p 5 -o ${sample_name}_filtered.bam filtered_primary.bam
-        """
-    }
-
-process count_reads {
-    cpus = 1
-    input:
-        path(read_counter)
-        tuple val(sample_name), path(filtered_reads), path(motus)
-
-    output:
-        tuple val(sample_name), path("${sample_name}_read_counts.csv")
-
-    script:
-        """
-        python $read_counter $filtered_reads $motus ${sample_name}_read_counts.csv
-        """
-    }
+include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
+include { GET_HEADERS } from './modules/local/seq_headers/main'
+include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
+include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
+include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
+include { BWA_MEM } from './modules/nf-core/bwa/mem/main'
+include { FILTERSAM } from './modules/local/filtersam/main'
+include { NORMALIZE_COUNTS } from './modules/local/normalize_counts/main'
 
 process rpsblast_COG {
     cpus = 4
@@ -341,7 +267,7 @@ workflow {
     preprocessed_samples = single_end_reads.mix(paired_end_reads)
 
 
-    motus_profilles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
+    motus_profiles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
 
     if (!params.skip_phanta) {
         phanta = PHANTA_PROFILE(preprocessed_samples, params.phanta_db)
@@ -358,17 +284,28 @@ workflow {
     prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
     eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
 
+    // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
+    amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes.faa)
+                    .collectFile( {row ->  [ "genes.faa", row[1] ]} )
+                    .map( { new Tuple([id: 'all'], it )} )
+    nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes.codon)
+                    .collectFile( {row ->  [ "genes.fna", row[1] ]} )
+                    .map( { new Tuple([id: 'all'], it )} )
+
+    gene_catalog_nt = CDHIT_CDHITEST(nucleotides).fasta
+
+    headers = GET_HEADERS(gene_catalog_nt).headers
+    SEQTK_SUBSEQ(amino_acids, headers.map( { it[1] } ).first())
+
+    // Make sure we have a single fastq file for all reads per sample
+    reads = CAT_FASTQ(preprocessed_samples, true).reads
+
+    catalog_index = BWA_INDEX(gene_catalog_nt).index
+    aligned_reads = BWA_MEM(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
+    filtered_reads = FILTERSAM(aligned_reads).reads
+    NORMALIZE_COUNTS(filtered_reads.join(motus_profiles))
+
     /*
-    amino_acids = genes.collectFile( {row ->  [ "genes.faa", row[1] ]} )
-    nucleotides = genes.collectFile( {row ->  [ "genes.fna", row[2] ]} )
-    gene_catalog = make_gene_catalog(amino_acids, nucleotides)
-
-    aligned_reads = align_reads(gene_catalog, preprocessed_paired)
-
-    filtered_reads = filter_reads(aligned_reads)
-
-    reads_and_motus = filtered_reads.join(motus_paired_end.out)
-    counts = count_reads(params.count_reads, reads_and_motus)
 
     gene_catalog_aa = gene_catalog.first() + "/gene_catalog_cdhit9590.faa"
     split_aa_seqs = gene_catalog_aa.splitFasta( by: 300, file: "chunk_" )
