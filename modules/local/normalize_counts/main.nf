@@ -17,5 +17,5 @@ process NORMALIZE_COUNTS {
     task.ext.when == null || task.ext.when
 
     script:
-    template 'count_reads.py'
+    template 'normalize_counts.py'
 }

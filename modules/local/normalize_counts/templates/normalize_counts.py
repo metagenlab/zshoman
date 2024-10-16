@@ -18,7 +18,7 @@ def main():
 
         number_of_cells = 0
         for line in handle:
-            number_of_cells += int(line.rsplit("\t", 1)[-1])
+            number_of_cells += int(line.rsplit("\\t", 1)[-1])
 
     samfile = pysam.AlignmentFile("$aligned_reads", "rb")
     read_counts = Counter()
@@ -31,7 +31,7 @@ def main():
 
     with open(f"{outprefix}_genes_per_cell.csv", "w") as fout:
         for key, val in read_counts.items():
-            fout.write(f"{key},{val/ref_lengths[key]/number_of_cells}\n")
+            fout.write(f"{key},{val/ref_lengths[key]/number_of_cells}\\n")
 
 
 if __name__ == '__main__':

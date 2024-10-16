@@ -24,21 +24,7 @@ include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
 include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
 include { BWA_MEM } from './modules/nf-core/bwa/mem/main'
 include { FILTERSAM } from './modules/local/filtersam/main'
-
-process count_reads {
-    cpus = 1
-    input:
-        path(read_counter)
-        tuple val(sample_name), path(filtered_reads), path(motus)
-
-    output:
-        tuple val(sample_name), path("${sample_name}_read_counts.csv")
-
-    script:
-        """
-        python $read_counter $filtered_reads $motus ${sample_name}_read_counts.csv
-        """
-    }
+include { NORMALIZE_COUNTS } from './modules/local/normalize_counts/main'
 
 process rpsblast_COG {
     cpus = 4
@@ -281,7 +267,7 @@ workflow {
     preprocessed_samples = single_end_reads.mix(paired_end_reads)
 
 
-    motus_profilles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
+    motus_profiles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
 
     if (!params.skip_phanta) {
         phanta = PHANTA_PROFILE(preprocessed_samples, params.phanta_db)
@@ -316,17 +302,10 @@ workflow {
 
     catalog_index = BWA_INDEX(gene_catalog_nt).index
     aligned_reads = BWA_MEM(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
-    filtered_reads = FILTERSAM(aligned_reads)
+    filtered_reads = FILTERSAM(aligned_reads).reads
+    NORMALIZE_COUNTS(filtered_reads.join(motus_profiles))
 
     /*
-    gene_catalog = make_gene_catalog(amino_acids, nucleotides)
-
-    aligned_reads = align_reads(gene_catalog, preprocessed_paired)
-
-    filtered_reads = filter_reads(aligned_reads)
-
-    reads_and_motus = filtered_reads.join(motus_paired_end.out)
-    counts = count_reads(params.count_reads, reads_and_motus)
 
     gene_catalog_aa = gene_catalog.first() + "/gene_catalog_cdhit9590.faa"
     split_aa_seqs = gene_catalog_aa.splitFasta( by: 300, file: "chunk_" )
