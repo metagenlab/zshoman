@@ -23,23 +23,7 @@ include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
 include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
 include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
 include { BWA_MEM } from './modules/nf-core/bwa/mem/main'
-
-
-process filter_reads {
-    cpus = 5
-    input:
-        tuple val(sample_name), path(alignments)
-
-    output:
-        tuple val(sample_name), path("${sample_name}_filtered.bam")
-
-    script:
-        """
-        samtools merge ${sample_name}.bam ${alignments}/${sample_name}_merged.bam ${alignments}/${sample_name}_r1.bam ${alignments}/${sample_name}_r2.bam ${alignments}/${sample_name}_singleton.bam
-        samtools view -F 256 -e '(qlen-sclen)>45' -O BAM -o filtered_primary.bam ${sample_name}.bam
-        filtersam -i 95 -p 5 -o ${sample_name}_filtered.bam filtered_primary.bam
-        """
-    }
+include { FILTERSAM } from './modules/local/filtersam/main'
 
 process count_reads {
     cpus = 1
@@ -332,6 +316,7 @@ workflow {
 
     catalog_index = BWA_INDEX(gene_catalog_nt).index
     aligned_reads = BWA_MEM(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
+    filtered_reads = FILTERSAM(aligned_reads)
 
     /*
     gene_catalog = make_gene_catalog(amino_acids, nucleotides)
