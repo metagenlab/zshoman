@@ -1,0 +1,38 @@
+name: normalize_counts
+description: Normalize gene counts by number of cells and gene lengths.
+keywords:
+  - genes
+  - counts
+  - normalization
+tools:
+  - custom:
+      description: Custom module to normalize gene counts by number of cells and gene lengths.
+      tool_dev_url: https://github.com/metagenlab/scripts/tree/main/CIDB/motus_pipeline/modules/local/normalize_counts/main.nf
+      identifier: "normalize_counts"
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test', single_end:false ]
+    - aligned_reads:
+        type: path
+        description: reads aligned to genes.
+    - motus_profile:
+        type: path
+        description: motus profile file (with counts).
+output:
+  - gene_counts:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - counts:
+          type: file
+          description: gene counts
+          pattern: "*_genes_per_cell.csv"
+authors:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
+maintainers:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
