@@ -25,6 +25,7 @@ include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
 include { BWA_MEM } from './modules/nf-core/bwa/mem/main'
 include { FILTERSAM } from './modules/local/filtersam/main'
 include { NORMALIZE_COUNTS } from './modules/local/normalize_counts/main'
+include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main'
 
 process rpsblast_COG {
     cpus = 4
@@ -295,7 +296,7 @@ workflow {
     gene_catalog_nt = CDHIT_CDHITEST(nucleotides).fasta
 
     headers = GET_HEADERS(gene_catalog_nt).headers
-    SEQTK_SUBSEQ(amino_acids, headers.map( { it[1] } ).first())
+    gene_catalog_aa = SEQTK_SUBSEQ(amino_acids, headers.map( { it[1] } ).first()).sequences
 
     // Make sure we have a single fastq file for all reads per sample
     reads = CAT_FASTQ(preprocessed_samples, true).reads
@@ -304,6 +305,8 @@ workflow {
     aligned_reads = BWA_MEM(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
     filtered_reads = FILTERSAM(aligned_reads).reads
     NORMALIZE_COUNTS(filtered_reads.join(motus_profiles))
+
+    EGGNOGMAPPER(gene_catalog_aa, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
 
     /*
 
