@@ -26,6 +26,8 @@ include { BWA_MEM } from './modules/nf-core/bwa/mem/main'
 include { FILTERSAM } from './modules/local/filtersam/main'
 include { NORMALIZE_COUNTS } from './modules/local/normalize_counts/main'
 include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main'
+include { PIGZ_COMPRESS as PIGZ_COMPRESS_1} from './modules/nf-core/pigz/compress/main'
+include { PIGZ_COMPRESS as PIGZ_COMPRESS_2 } from './modules/nf-core/pigz/compress/main'
 
 process rpsblast_COG {
     cpus = 4
@@ -286,11 +288,14 @@ workflow {
     eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
 
     // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
-    amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes.faa)
-                    .collectFile( {row ->  [ "genes.faa", row[1] ]} )
+    // we first need to compress the output from MetaEuk
+    eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
+    eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
+    amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
+                    .collectFile( {row ->  [ "genes.faa.gz", row[1] ]} )
                     .map( { new Tuple([id: 'all'], it )} )
-    nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes.codon)
-                    .collectFile( {row ->  [ "genes.fna", row[1] ]} )
+    nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt)
+                    .collectFile( {row ->  [ "genes.fna.gz", row[1] ]} )
                     .map( { new Tuple([id: 'all'], it )} )
 
     gene_catalog_nt = CDHIT_CDHITEST(nucleotides).fasta
