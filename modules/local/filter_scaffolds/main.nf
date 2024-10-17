@@ -12,8 +12,8 @@ process FILTER_SCAFFOLDS {
 
     output:
     tuple val(meta), path("${meta.id}.scaffolds.min500.fasta"), emit: all_scaffolds
-    tuple val(meta), path("${meta.id}.scaffolds.min500_eukaryotes.fasta"), emit: prok_scaffolds
-    tuple val(meta), path("${meta.id}.scaffolds.min500_prokaryotes.fasta"), emit: euk_scaffolds
+    tuple val(meta), path("${meta.id}.scaffolds.min500_eukaryotes.fasta"), emit: euk_scaffolds
+    tuple val(meta), path("${meta.id}.scaffolds.min500_prokaryotes.fasta"), emit: prok_scaffolds
 
     when:
     task.ext.when == null || task.ext.when
