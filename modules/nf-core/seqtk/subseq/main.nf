@@ -25,13 +25,14 @@ process SEQTK_SUBSEQ {
     if ("$sequences" ==~ /.+\.fq|.+\.fq.gz|.+\.fastq|.+\.fastq.gz/) {
         ext = "fq"
     }
+    def samplename = "$sequences.simpleName"
     """
     seqtk \\
         subseq \\
         $args \\
         $sequences \\
         $filter_list | \\
-        gzip --no-name > ${sequences}${prefix}.${ext}.gz
+        gzip --no-name > ${samplename}_${prefix}.${ext}.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
