@@ -19,7 +19,7 @@ process PHANTA_PROFILE {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def suffixes = meta.single_end ? "--fwd _filtered" : "--fwd _1_unmerged --rev _2_unmerged"
+    def suffixes = meta.single_end ? "--fwd _filtered" : "--fwd host_filtered_1 --rev host_filtered_2"
     def input = meta.single_end ? "-s ${reads[0]}" : "-f ${reads[0]} -r ${reads[1]} -s ${reads[2]},${reads[3]}"
     """
     python ${params.phanta_dir}/run_phanta.py \\

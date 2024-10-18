@@ -99,7 +99,7 @@ workflow {
     motus_profiles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
 
     if (!params.skip_phanta) {
-        phanta = PHANTA_PROFILE(preprocessed_samples, params.phanta_db)
+        phanta = PHANTA_PROFILE(paired_end_reads_pairs, params.phanta_db)
     }
 
     scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
