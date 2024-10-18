@@ -12,8 +12,7 @@ To run the pipeline on obelix:
 - start a screen
 - get an allocation for running nextflow (`salloc --cpus-per-task=1 --partition=long`)
 - activate nextflow environment `conda activate nextflow`
-- run the pipeline `nextflow run /mnt/slow_storage/users/njohner/scripts/CIDB/motus_pipeline/motus_pipeline.nf --input samples_test_paired.csv --phanta_db /mnt/slow_
-storage/databases/phanta/unmasked_db_v1/ -profile apptainer  --db_dir /mnt/slow_storage/users/njohner/CIDB/Analysis/DB/motus_pipeline/ -resume --motus_db=/mnt/slow_storage/databases/db_mOTU/ --skip_phanta=false --skip_dev=false --metaeuk_db /mnt/slow_storage/databases/MicroEuk_v3/MicroEuk90.faa.gz --eggnog_dbdir /mnt/slow_storage/databases/eggnog -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config`
+- run the pipeline `nextflow run /mnt/slow_storage/users/njohner/scripts/CIDB/motus_pipeline/motus_pipeline.nf --input samples_test_paired.csv --phanta_db /mnt/slow_storage/databases/phanta/unmasked_db_v1/ -profile apptainer  --db_dir /mnt/slow_storage/users/njohner/CIDB/Analysis/DB/motus_pipeline/ -resume --motus_db=/mnt/slow_storage/databases/db_mOTU/ --skip_phanta=false --skip_dev=false --metaeuk_db /mnt/slow_storage/databases/MicroEuk_v3/MicroEuk90.faa.gz --eggnog_dbdir /mnt/slow_storage/databases/eggnog -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config`
 
 ## Creating the MicroEuk90 database
 
