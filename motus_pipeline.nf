@@ -31,11 +31,12 @@ include { PIGZ_COMPRESS as PIGZ_COMPRESS_2 } from './modules/nf-core/pigz/compre
 
 
 workflow {
+    // Read input file
     input_file = Channel.fromPath(params.input)
     samples = input_file
         .splitCsv(header: false, strip: false, limit: 1662)
 
-    // prepare metadata for samples to distinguish single from paired-end reads
+    // Prepare metadata for samples to distinguish single from paired-end reads
     samples = samples.map( {
         row ->
             if (!row[2].strip()) {
@@ -45,11 +46,16 @@ workflow {
             }
         })
 
+
+    ///////////////////
+    // PREPROCESSING //
+    ///////////////////
+
     trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.references.adapters).reads
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix).reads
 
     // here we split up paired-end and single-end samples, as we will need to
-    // treat them separately because we kep the singletons for the paired-end
+    // treat them separately because we keep the singletons for the paired-end
     // reads.
     phix_filtered_reads = phix_filtered_reads.branch(
         {
@@ -96,11 +102,20 @@ workflow {
     preprocessed_samples = single_end_reads.mix(paired_end_reads)
 
 
+    /////////////////////////
+    // Taxonomic Profiling //
+    /////////////////////////
+
     motus_profiles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
 
     if (!params.skip_phanta) {
         phanta = PHANTA_PROFILE(paired_end_reads_pairs, params.phanta_db)
     }
+
+
+    ///////////////////////////////
+    // Assembly and gene calling //
+    ///////////////////////////////
 
     scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
 
@@ -112,6 +127,11 @@ workflow {
 
     prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
     eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
+
+
+    //////////////////
+    // Gene catalog //
+    //////////////////
 
     // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
     // we first need to compress the output from MetaEuk
@@ -136,6 +156,11 @@ workflow {
     aligned_reads = BWA_MEM(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
     filtered_reads = FILTERSAM(aligned_reads).reads
     NORMALIZE_COUNTS(filtered_reads.join(motus_profiles))
+
+
+    ///////////////////////////
+    // Functional annotation //
+    ///////////////////////////
 
     EGGNOGMAPPER(gene_catalog_aa, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
 }
