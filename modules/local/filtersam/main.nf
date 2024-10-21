@@ -1,6 +1,6 @@
 process FILTERSAM {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_high'
 
     conda "${moduleDir}/environment.yml"
     container "docker://metagenlab/filtersam:1.0"
