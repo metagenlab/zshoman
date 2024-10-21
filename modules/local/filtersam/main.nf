@@ -1,6 +1,6 @@
 process FILTERSAM {
     tag "$meta.id"
-    label 'process_high'
+    label 'process_single'
 
     conda "${moduleDir}/environment.yml"
     container "docker://metagenlab/filtersam:1.0"
@@ -21,7 +21,6 @@ process FILTERSAM {
     """
     filtersam \\
     $args \\
-    -p $task.cpus \\
     -o ${prefix}_filtered.bam \\
     $aligned_reads \\
     &> ${prefix}.filtersam.log
