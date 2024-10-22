@@ -19,13 +19,20 @@ include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
 include { GET_HEADERS } from './modules/local/seq_headers/main'
 include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
 include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
-include { BWA_INDEX } from './modules/nf-core/bwa/index/main'
-include { BWA_MEM } from './modules/nf-core/bwa/mem/main'
-include { FILTERSAM } from './modules/local/filtersam/main'
-include { NORMALIZE_COUNTS } from './modules/local/normalize_counts/main'
-include { EGGNOGMAPPER } from './modules/nf-core/eggnogmapper/main'
-include { PIGZ_COMPRESS as PIGZ_COMPRESS_1} from './modules/nf-core/pigz/compress/main'
+include { BWA_INDEX as BWA_INDEX_GC } from './modules/nf-core/bwa/index/main'
+include { BWA_INDEX as BWA_INDEX_SAMPLES } from './modules/nf-core/bwa/index/main'
+include { BWA_MEM as BWA_MEM_GC } from './modules/nf-core/bwa/mem/main'
+include { BWA_MEM as BWA_MEM_SAMPLES } from './modules/nf-core/bwa/mem/main'
+include { FILTERSAM as FILTERSAM_GC } from './modules/local/filtersam/main'
+include { FILTERSAM as FILTERSAM_SAMPLES } from './modules/local/filtersam/main'
+include { NORMALIZE_COUNTS as NORMALIZE_COUNTS_GC } from './modules/local/normalize_counts/main'
+include { NORMALIZE_COUNTS as NORMALIZE_COUNTS_SAMPLES } from './modules/local/normalize_counts/main'
+include { EGGNOGMAPPER as EGGNOGMAPPER_GC } from './modules/nf-core/eggnogmapper/main'
+include { EGGNOGMAPPER as EGGNOGMAPPER_SAMPLES } from './modules/nf-core/eggnogmapper/main'
+include { PIGZ_COMPRESS as PIGZ_COMPRESS_1 } from './modules/nf-core/pigz/compress/main'
 include { PIGZ_COMPRESS as PIGZ_COMPRESS_2 } from './modules/nf-core/pigz/compress/main'
+include { CAT_CAT as CAT_AA } from './modules/nf-core/cat/cat/main'
+include { CAT_CAT as CAT_NT } from './modules/nf-core/cat/cat/main'
 
 
 workflow {
@@ -73,7 +80,8 @@ workflow {
     paired_end_reads = paired_end_reads.join(paired_end_reads_merged.merged.join(paired_end_reads_merged.unmerged))
     paired_end_reads = paired_end_reads.map({ new Tuple (it[0], it[3] + [it[2]] + [it[1]]) })
     preprocessed_samples = hf_reads_split.single.mix(paired_end_reads)
-
+    // Make sure we have a single fastq file for all reads per sample
+    reads = CAT_FASTQ(preprocessed_samples, true).reads
 
     /////////////////////////
     // Taxonomic Profiling //
@@ -103,14 +111,16 @@ workflow {
     eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
 
 
+    // we need to compress the output from MetaEuk so that both eukaryotic
+    // and prokaryotic genes are compressed
+    eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
+    eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
+
     //////////////////
     // Gene catalog //
     //////////////////
 
     // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
-    // we first need to compress the output from MetaEuk
-    eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
-    eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
     amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
                     .collectFile( {row ->  [ "genes.faa.gz", row[1] ]} )
                     .map( { new Tuple([id: 'all'], it )} )
@@ -123,20 +133,41 @@ workflow {
     headers = GET_HEADERS(gene_catalog_nt).headers
     gene_catalog_aa = SEQTK_SUBSEQ(amino_acids, headers.map( { it[1] } ).first()).sequences
 
-    // Make sure we have a single fastq file for all reads per sample
-    reads = CAT_FASTQ(preprocessed_samples, true).reads
-
-    catalog_index = BWA_INDEX(gene_catalog_nt).index
-    aligned_reads = BWA_MEM(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
-    filtered_reads = FILTERSAM(aligned_reads).reads
-    NORMALIZE_COUNTS(filtered_reads.join(motus_profiles))
+    catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
+    aligned_reads = BWA_MEM_GC(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
+    filtered_reads = FILTERSAM_GC(aligned_reads).reads
+    NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
 
 
     ///////////////////////////
     // Functional annotation //
     ///////////////////////////
 
-    EGGNOGMAPPER(gene_catalog_aa, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+    EGGNOGMAPPER_GC(gene_catalog_aa, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+
+    /////////////////////////////////////
+    // Genes counts individual samples //
+    /////////////////////////////////////
+
+    // Let's gather the prokaryotic genes and eukaryotic genes together
+    amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()
+    nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()
+
+    catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
+    reads_index_nucleotides = reads.join(catalog_index).join(nucleotides).map({
+        [new Tuple(it[0], it[1]), new Tuple(it[0], it[2]), new Tuple(it[0], it[3])]
+        })
+    aligned_reads = BWA_MEM_SAMPLES(*reads_index_nucleotides, false).bam
+    filtered_reads = FILTERSAM_SAMPLES(aligned_reads).reads
+    NORMALIZE_COUNTS_SAMPLES(filtered_reads.join(motus_profiles))
+
+
+    ///////////////////////////////////
+    // Functional individual samples //
+    ///////////////////////////////////
+
+    EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+
 }
 
 workflow.onComplete {
