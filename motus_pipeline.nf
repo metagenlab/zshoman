@@ -134,7 +134,7 @@ workflow {
     gene_catalog_aa = SEQTK_SUBSEQ(amino_acids, headers.map( { it[1] } ).first()).sequences
 
     catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
-    aligned_reads = BWA_MEM_GC(reads, catalog_index.first(), gene_catalog_nt.first(), false).bam
+    aligned_reads = BWA_MEM_GC(reads.map( { new Tuple (it[0], it[1], catalog_index.first()[1]) } ), false).bam
     filtered_reads = FILTERSAM_GC(aligned_reads).reads
     NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
 
@@ -154,10 +154,8 @@ workflow {
     nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()
 
     catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
-    reads_index_nucleotides = reads.join(catalog_index).join(nucleotides).map({
-        [new Tuple(it[0], it[1]), new Tuple(it[0], it[2]), new Tuple(it[0], it[3])]
-        })
-    aligned_reads = BWA_MEM_SAMPLES(*reads_index_nucleotides, false).bam
+    reads_index = reads.join(catalog_index)
+    aligned_reads = BWA_MEM_SAMPLES(reads_index, false).bam
     filtered_reads = FILTERSAM_SAMPLES(aligned_reads).reads
     NORMALIZE_COUNTS_SAMPLES(filtered_reads.join(motus_profiles))
 
