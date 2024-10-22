@@ -121,17 +121,17 @@ workflow {
     //////////////////
 
     // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
-    amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
+    all_amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
                     .collectFile( {row ->  [ "genes.faa.gz", row[1] ]} )
                     .map( { new Tuple([id: 'all'], it )} )
-    nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt)
+    all_nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt)
                     .collectFile( {row ->  [ "genes.fna.gz", row[1] ]} )
                     .map( { new Tuple([id: 'all'], it )} )
 
-    gene_catalog_nt = CDHIT_CDHITEST(nucleotides).fasta
+    gene_catalog_nt = CDHIT_CDHITEST(all_nucleotides).fasta
 
     headers = GET_HEADERS(gene_catalog_nt).headers
-    gene_catalog_aa = SEQTK_SUBSEQ(amino_acids, headers.map( { it[1] } ).first()).sequences
+    gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map( { it[1] } ).first()).sequences
 
     catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
     aligned_reads = BWA_MEM_GC(reads.map( { new Tuple (it[0], it[1], catalog_index.first()[1]) } ), false).bam
