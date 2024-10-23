@@ -1,0 +1,53 @@
+Changes in module 'nf-core/bwa/mem'
+--- modules/nf-core/bwa/mem/main.nf
++++ modules/nf-core/bwa/mem/main.nf
+@@ -8,9 +8,7 @@
+         'biocontainers/mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40:1bd8542a8a0b42e0981337910954371d0230828e-0' }"
+ 
+     input:
+-    tuple val(meta) , path(reads)
+-    tuple val(meta2), path(index)
+-    tuple val(meta3), path(fasta)
++    tuple val(meta), path(reads), path(index)
+     val   sort_bam
+ 
+     output:
+@@ -28,13 +26,7 @@
+     def args2 = task.ext.args2 ?: ''
+     def prefix = task.ext.prefix ?: "${meta.id}"
+     def samtools_command = sort_bam ? 'sort' : 'view'
+-    def extension = args2.contains("--output-fmt sam")   ? "sam" :
+-                    args2.contains("--output-fmt cram")  ? "cram":
+-                    sort_bam && args2.contains("-O cram")? "cram":
+-                    !sort_bam && args2.contains("-C")    ? "cram":
+-                    "bam"
+-    def reference = fasta && extension=="cram"  ? "--reference ${fasta}" : ""
+-    if (!fasta && extension=="cram") error "Fasta reference is required for CRAM output"
++    def extension = args2.contains("--output-fmt sam")   ? "sam" : "bam"
+     """
+     INDEX=`find -L ./ -name "*.amb" | sed 's/\\.amb\$//'`
+ 
+@@ -43,7 +35,7 @@
+         -t $task.cpus \\
+         \$INDEX \\
+         $reads \\
+-        | samtools $samtools_command $args2 ${reference} --threads $task.cpus -o ${prefix}.${extension} -
++        | samtools $samtools_command $args2 --threads $task.cpus -o ${prefix}.${extension} -
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+@@ -57,11 +49,7 @@
+     def args2 = task.ext.args2 ?: ''
+     def prefix = task.ext.prefix ?: "${meta.id}"
+     def samtools_command = sort_bam ? 'sort' : 'view'
+-    def extension = args2.contains("--output-fmt sam")   ? "sam" :
+-                    args2.contains("--output-fmt cram")  ? "cram":
+-                    sort_bam && args2.contains("-O cram")? "cram":
+-                    !sort_bam && args2.contains("-C")    ? "cram":
+-                    "bam"
++    def extension = args2.contains("--output-fmt sam")   ? "sam" : "bam"
+     """
+     touch ${prefix}.${extension}
+     touch ${prefix}.csi
+
+************************************************************
