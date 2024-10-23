@@ -1,38 +1,38 @@
 #!/usr/bin/env nextflow
 
-include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
-include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
-include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING } from './modules/nf-core/bbmap/bbduk/main'
+include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST_SINGLETONS } from './modules/nf-core/bbmap/align/main'
-include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
+include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING } from './modules/nf-core/bbmap/bbduk/main'
+include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbmerge/main'
-include { MOTUS_PROFILE } from './modules/local/motus/main'
-include { SPADES } from './modules/nf-core/spades/main'
-include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
-include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
-include { PHANTA_PROFILE } from './modules/local/phanta/main'
-include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
-include { PRODIGAL } from './modules/nf-core/prodigal/main'
-include { METAEUK_EASYPREDICT } from './modules/nf-core/metaeuk/easypredict/main'
-include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
-include { GET_HEADERS } from './modules/local/seq_headers/main'
-include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
-include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
+include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
 include { BWA_INDEX as BWA_INDEX_GC } from './modules/nf-core/bwa/index/main'
 include { BWA_INDEX as BWA_INDEX_SAMPLES } from './modules/nf-core/bwa/index/main'
 include { BWA_MEM as BWA_MEM_GC } from './modules/nf-core/bwa/mem/main'
 include { BWA_MEM as BWA_MEM_SAMPLES } from './modules/nf-core/bwa/mem/main'
-include { FILTERSAM as FILTERSAM_GC } from './modules/local/filtersam/main'
-include { FILTERSAM as FILTERSAM_SAMPLES } from './modules/local/filtersam/main'
-include { NORMALIZE_COUNTS as NORMALIZE_COUNTS_GC } from './modules/local/normalize_counts/main'
-include { NORMALIZE_COUNTS as NORMALIZE_COUNTS_SAMPLES } from './modules/local/normalize_counts/main'
-include { EGGNOGMAPPER as EGGNOGMAPPER_GC } from './modules/nf-core/eggnogmapper/main'
-include { EGGNOGMAPPER as EGGNOGMAPPER_SAMPLES } from './modules/nf-core/eggnogmapper/main'
-include { PIGZ_COMPRESS as PIGZ_COMPRESS_1 } from './modules/nf-core/pigz/compress/main'
-include { PIGZ_COMPRESS as PIGZ_COMPRESS_2 } from './modules/nf-core/pigz/compress/main'
 include { CAT_CAT as CAT_AA } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_NT } from './modules/nf-core/cat/cat/main'
+include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
+include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
+include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
+include { EGGNOGMAPPER as EGGNOGMAPPER_GC } from './modules/nf-core/eggnogmapper/main'
+include { EGGNOGMAPPER as EGGNOGMAPPER_SAMPLES } from './modules/nf-core/eggnogmapper/main'
+include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
+include { FILTERSAM as FILTERSAM_GC } from './modules/local/filtersam/main'
+include { FILTERSAM as FILTERSAM_SAMPLES } from './modules/local/filtersam/main'
+include { GET_HEADERS } from './modules/local/seq_headers/main'
+include { METAEUK_EASYPREDICT } from './modules/nf-core/metaeuk/easypredict/main'
+include { MOTUS_PROFILE } from './modules/local/motus/main'
+include { NORMALIZE_COUNTS as NORMALIZE_COUNTS_GC } from './modules/local/normalize_counts/main'
+include { NORMALIZE_COUNTS as NORMALIZE_COUNTS_SAMPLES } from './modules/local/normalize_counts/main'
+include { PHANTA_PROFILE } from './modules/local/phanta/main'
+include { PIGZ_COMPRESS as PIGZ_COMPRESS_1 } from './modules/nf-core/pigz/compress/main'
+include { PIGZ_COMPRESS as PIGZ_COMPRESS_2 } from './modules/nf-core/pigz/compress/main'
+include { PRODIGAL } from './modules/nf-core/prodigal/main'
+include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
+include { SPADES } from './modules/nf-core/spades/main'
 
 
 workflow {
@@ -87,7 +87,9 @@ workflow {
     // Taxonomic Profiling //
     /////////////////////////
 
-    motus_profiles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
+    if (!params.skip_motus) {
+        motus_profiles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
+    }
 
     if (!params.skip_phanta) {
         // we cannot use the singletons nor the merged reads here so he use hf_reads instead.
@@ -95,77 +97,80 @@ workflow {
     }
 
 
-    ///////////////////////////////
-    // Assembly and gene calling //
-    ///////////////////////////////
+    if (!params.skip_assembly && !params.skip_gene_catalog) {
+        ///////////////////////////////
+        // Assembly and gene calling //
+        ///////////////////////////////
 
-    scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+        scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
 
-    assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
-    contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
+        assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
+        contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
 
-    filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
-    assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+        filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
+        assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
-    prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
-    eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
-
-
-    // we need to compress the output from MetaEuk so that both eukaryotic
-    // and prokaryotic genes are compressed
-    eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
-    eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
-
-    //////////////////
-    // Gene catalog //
-    //////////////////
-
-    // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
-    all_amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
-                    .collectFile( {row ->  [ "genes.faa.gz", row[1] ]} )
-                    .map( { new Tuple([id: 'all'], it )} )
-    all_nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt)
-                    .collectFile( {row ->  [ "genes.fna.gz", row[1] ]} )
-                    .map( { new Tuple([id: 'all'], it )} )
-
-    gene_catalog_nt = CDHIT_CDHITEST(all_nucleotides).fasta
-
-    headers = GET_HEADERS(gene_catalog_nt).headers
-    gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map( { it[1] } ).first()).sequences
-
-    catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
-    aligned_reads = BWA_MEM_GC(reads.combine(catalog_index).map( { new Tuple(it[0], it[1], it[3]) } ), false).bam
-    filtered_reads = FILTERSAM_GC(aligned_reads).reads
-    NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
+        prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
+        eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
 
 
-    ///////////////////////////
-    // Functional annotation //
-    ///////////////////////////
+        // we need to compress the output from MetaEuk so that both eukaryotic
+        // and prokaryotic genes are compressed
+        eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
+        eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
 
-    EGGNOGMAPPER_GC(gene_catalog_aa, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+        //////////////////
+        // Gene catalog //
+        //////////////////
 
-    /////////////////////////////////////
-    // Genes counts individual samples //
-    /////////////////////////////////////
+        // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
+        all_amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
+                        .collectFile( {row ->  [ "genes.faa.gz", row[1] ]} )
+                        .map( { new Tuple([id: 'all'], it )} )
+        all_nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt)
+                        .collectFile( {row ->  [ "genes.fna.gz", row[1] ]} )
+                        .map( { new Tuple([id: 'all'], it )} )
 
-    // Let's gather the prokaryotic genes and eukaryotic genes together
-    amino_acids = CAT_AA(prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()).file_out
-    nucleotides = CAT_NT(prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()).file_out
+        gene_catalog_nt = CDHIT_CDHITEST(all_nucleotides).fasta
 
-    catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
-    reads_index = reads.join(catalog_index)
-    aligned_reads = BWA_MEM_SAMPLES(reads_index, false).bam
-    filtered_reads = FILTERSAM_SAMPLES(aligned_reads).reads
-    NORMALIZE_COUNTS_SAMPLES(filtered_reads.join(motus_profiles))
+        headers = GET_HEADERS(gene_catalog_nt).headers
+        gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map( { it[1] } ).first()).sequences
+
+        catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
+        aligned_reads = BWA_MEM_GC(reads.combine(catalog_index).map( { new Tuple(it[0], it[1], it[3]) } ), false).bam
+        filtered_reads = FILTERSAM_GC(aligned_reads).reads
+        NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
 
 
-    ///////////////////////////////////
-    // Functional individual samples //
-    ///////////////////////////////////
+        ///////////////////////////
+        // Functional annotation //
+        ///////////////////////////
 
-    EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+        EGGNOGMAPPER_GC(gene_catalog_aa, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+    }
 
+    if (!params.skip_assembly && !params.skip_per_sample) {
+        /////////////////////////////////////
+        // Genes counts individual samples //
+        /////////////////////////////////////
+
+        // Let's gather the prokaryotic genes and eukaryotic genes together
+        amino_acids = CAT_AA(prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()).file_out
+        nucleotides = CAT_NT(prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()).file_out
+
+        catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
+        reads_index = reads.join(catalog_index)
+        aligned_reads = BWA_MEM_SAMPLES(reads_index, false).bam
+        filtered_reads = FILTERSAM_SAMPLES(aligned_reads).reads
+        NORMALIZE_COUNTS_SAMPLES(filtered_reads.join(motus_profiles))
+
+
+        ///////////////////////////////////
+        // Functional individual samples //
+        ///////////////////////////////////
+
+        EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+    }
 }
 
 workflow.onComplete {
