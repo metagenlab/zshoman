@@ -150,8 +150,8 @@ workflow {
     /////////////////////////////////////
 
     // Let's gather the prokaryotic genes and eukaryotic genes together
-    amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()
-    nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()
+    amino_acids = CAT_AA(prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()).file_out
+    nucleotides = CAT_NT(prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()).file_out
 
     catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
     reads_index = reads.join(catalog_index)
