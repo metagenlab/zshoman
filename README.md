@@ -1,4 +1,4 @@
-# Taxonomic assignment and functional annotation pipeline for metagenomics data
+# Ze SHOtgun Metagenomics ANalysis pipeline
 
 This pipeline is meant to analyse whole-genome metagenomic data.
 For preprocessing the pipeline follows guidelines from [methods in microbiomics](https://methods-in-microbiomics.readthedocs.io/en/latest/preprocessing/preprocessing.html) as well as for [assembly](https://methods-in-microbiomics.readthedocs.io/en/latest/assembly/metagenomic_workflows.html#id1), the [gene catalog](https://methods-in-microbiomics.readthedocs.io/en/latest/assembly/metagenomic_workflows.html#gene-catalogs) and [taxonomic profiling with mOTUs](https://methods-in-microbiomics.readthedocs.io/en/latest/taxonomic_profiling/metagenomes.html).
@@ -20,7 +20,7 @@ For Eukaryotic gene calling we use MetaEuk, which requires a database to match g
 
 ## Post-processing
 
-Post-processing scripts are python scripts run using the conda environment defined in [post_processing.yaml](https://github.com/metagenlab/scripts/blob/main/CIDB/motus_pipeline/post_processing/post_processing.yaml).
+Post-processing scripts are python scripts run using the conda environment defined in [post_processing.yaml](https://github.com/metagenlab/zshoman/post_processing/post_processing.yaml).
 To run the scripts, simply create the conda environment, activate it and run the script with python:
 ```
 conda env create -f post_processing/post_processing.yaml
@@ -30,4 +30,4 @@ python post_processing/annotations.py path/to/pipeline/output
 
 ### Eggnog annotations
 
-The Eggnog annotation table is a bit complex to analyse as is, as it condenses many types of annotations. Notably for annotation types for which a given gene can have several annotations, the cells will contain coma-separated lists of annotations, e.g. `ko:K00336,ko:K01101`. To simplify analysis we provide a post-processing script ([annotations.py](https://github.com/metagenlab/scripts/blob/main/CIDB/motus_pipeline/post_processing/annotations.py)) which will output a table for each annotation type, containing the annotation (e.g. `ko:K00336`) and its abundance in each sample.
+The Eggnog annotation table is a bit complex to analyse as is, as it condenses many types of annotations. Notably for annotation types for which a given gene can have several annotations, the cells will contain coma-separated lists of annotations, e.g. `ko:K00336,ko:K01101`. To simplify analysis we provide a post-processing script ([annotations.py](https://github.com/metagenlab/zshoman/post_processing/annotations.py)) which will output a table for each annotation type, containing the annotation (e.g. `ko:K00336`) and its abundance in each sample.
