@@ -1,0 +1,7 @@
+name: post_processing
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - pandas
