@@ -17,3 +17,17 @@ To run the pipeline on obelix:
 ## Creating the MicroEuk90 database
 
 For Eukaryotic gene calling we use MetaEuk, which requires a database to match genes against. We propose to use the MicroEuk database from [veba](https://github.com/jolespin/veba). When downloading the database you get a database with all sequences and some files containing clusters for the database clustered at 90% and 50% sequence identity. We propose to use the 90% sequence identity clustering. For this we need to generate the database from the `MicroEuk100.faa.gz` and `MicroEuk90_clusters.tsv.gz` files. This can be easily done by getting the set of unique identifiers from the first column of `MicroEuk90_clusters.tsv.gz`, writing that to a file `MicroEuk90_representatives.csv` and reusing that to filter the database with `seqtk subseq MicroEuk100.faa.gz MicroEuk90_representatives.csv  | gzip --no-name > MicroEuk90.faa.gz`.
+
+## Post-processing
+
+Post-processing scripts are python scripts run using the conda environment defined in [post_processing.yaml](https://github.com/metagenlab/scripts/blob/main/CIDB/motus_pipeline/post_processing/post_processing.yaml).
+To run the scripts, simply create the conda environment, activate it and run the script with python:
+```
+conda env create -f post_processing/post_processing.yaml
+conda activate post_processing
+python post_processing/annotations.py path/to/pipeline/output
+```
+
+### Eggnog annotations
+
+The Eggnog annotation table is a bit complex to analyse as is, as it condenses many types of annotations. Notably for annotation types for which a given gene can have several annotations, the cells will contain coma-separated lists of annotations, e.g. `ko:K00336,ko:K01101`. To simplify analysis we provide a post-processing script ([annotations.py](https://github.com/metagenlab/scripts/blob/main/CIDB/motus_pipeline/post_processing/annotations.py)) which will output a table for each annotation type, containing the annotation (e.g. `ko:K00336`) and its abundance in each sample.
