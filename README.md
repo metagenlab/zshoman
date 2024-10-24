@@ -7,7 +7,8 @@ The pipeline is meant to handle paired-end and single-end sequencing and analyse
 
 An overview of the pipeline is shown below:
 
-![ShoMAn] workflow](https://github.com/metagenlab/zshoman/main/assets/zdb_workflow.png)
+![ShoMAn workflow](https://github.com/metagenlab/zshoman/blob/main/assets/metagenomics_pipeline.drawio.svg)
+
 
 
 ## Running the pipeline on obelix
