@@ -5,6 +5,11 @@ For preprocessing the pipeline follows guidelines from [methods in microbiomics]
 
 The pipeline is meant to handle paired-end and single-end sequencing and analyse not only bacteria, but also viruses and eukaryotes (fungi).
 
+An overview of the pipeline is shown below:
+
+![ShoMAn] workflow](https://github.com/metagenlab/zshoman/main/assets/zdb_workflow.png)
+
+
 ## Running the pipeline on obelix
 
 To run the pipeline on obelix:
