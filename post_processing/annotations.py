@@ -5,13 +5,18 @@ and generate tables containing the annotation abundances.
 
 import argparse
 import glob
+import logging
 import os
 
 import numpy as np
 import pandas as pd
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("Post-processing")
+
 
 def annotation_abunances(input_dir, output_dir, old_style):
+    logger.info("Loading eggnog annotations")
     eggnog_file = os.path.join(input_dir, "gene_catalog", "all.emapper.annotations")
     data = pd.read_csv(eggnog_file, header=4, delimiter="\t", index_col=0)
     data.where(data != "-", np.nan, inplace=True)
@@ -27,12 +32,14 @@ def annotation_abunances(input_dir, output_dir, old_style):
     for abundance_file in abundance_files:
         sample = abundance_file.rsplit("/", 1)[-1].rstrip("_genes_per_cell.csv")
         samples.append(sample)
+        logger.info(f"Merging annotations for {sample}")
         abundance = pd.read_csv(abundance_file, delimiter=",", index_col=0, names=["gene", sample])
         data = data.join(abundance)
 
     for colname in ['COG_category', 'GOs', 'EC', 'KEGG_ko', 'KEGG_Pathway',
                     'KEGG_Module', 'KEGG_Reaction', 'KEGG_rclass', 'BRITE',
                     'KEGG_TC', 'CAZy', 'BiGG_Reaction', 'PFAMs']:
+        logger.info(f"Creating {colname} abundances table")
         annotation_table = []
         for gene, row in data[pd.notna(data[colname])].iterrows():
             annotations = row[colname].split(",")
