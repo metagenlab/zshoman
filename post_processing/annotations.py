@@ -40,16 +40,10 @@ def annotation_abunances(input_dir, output_dir, old_style):
                     'KEGG_Module', 'KEGG_Reaction', 'KEGG_rclass', 'BRITE',
                     'KEGG_TC', 'CAZy', 'BiGG_Reaction', 'PFAMs']:
         logger.info(f"Creating {colname} abundances table")
-        annotation_table = []
-        for gene, row in data[pd.notna(data[colname])].iterrows():
-            annotations = row[colname].split(",")
-            annotation_table.extend([[gene, el] for el in annotations])
-
-        annotation_table = pd.DataFrame(annotation_table, columns=["#query", colname])
-        annotation_table = annotation_table.join(data[samples], on="#query")
-        annotation_table.where(pd.notna(annotation_table), 0, inplace=True)
-        grouped = annotation_table.groupby(colname).sum().drop(columns=["#query"])
-        grouped.to_csv(os.path.join(output_dir, f"{colname}.csv"))
+        annotations = data[colname][pd.notna(data[colname])].str.split(",").explode()
+        annotations = annotations.to_frame().merge(
+            data[samples], how="left", left_on="#query", right_index=True)
+        annotations.groupby(colname).sum().to_csv(os.path.join(output_dir, f"{colname}.csv"))
 
 
 if __name__ == '__main__':
