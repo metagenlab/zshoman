@@ -10,6 +10,30 @@ An overview of the pipeline is shown below:
 ![ShoMAn workflow](https://github.com/metagenlab/zshoman/blob/main/assets/metagenomics_pipeline.drawio.svg)
 
 
+## Running the pipeline
+
+### Input
+
+Input is a csv file with 3 columns: label, path to forward reads, path to reverse reads. For single-end samples, last column should be left empty. See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) for an example.
+
+### Databases
+
+The pipeline requires various reference databases which are expected to be organised in subdirectories of a single database directory specified with `db_dir`. By default it expects the following organisation:
+
+- `db_dir/phanta/uhggv2_mgv/` which can be downloaded as specified [in the phanta repository](https://github.com/bhattlab/phanta/blob/main/databases.md)
+- `db_dir/db_mOTU/` for the motus database which can be downloaded using [the mOTUs software](https://github.com/motu-tool/mOTUs)
+- `db_dir/MicroEuk_v3/MicroEuk90.faa.gz` for eukaryotic gene calling, which can be obtained [as explained below](#creating-the-microeuk90-database)
+- `db_dir/eggnog/` for the eggnog database, which can be downloaded from the [eggnog website](http://eggnog5.embl.de/#/app/home)
+- `db_dir/metagenlab_wgs_pipeline/phix174_ill.ref.fa.gz` for contaminant removal, as obtained from the [methods in microbiomics website](https://methods-in-microbiomics.readthedocs.io/en/latest/_downloads/3d3ab63ee68ea60cc2374b0690387094/Sample1_isolate.tar.gz)
+- `db_dir/metagenlab_wgs_pipeline/adapters.fa` for adapter trimming, as obtained from the [methods in microbiomics website](https://methods-in-microbiomics.readthedocs.io/en/latest/_downloads/3d3ab63ee68ea60cc2374b0690387094/Sample1_isolate.tar.gz)
+- `db_dir/metagenlab_wgs_pipeline/hg19_main_mask_ribo_animal_allplant_allfungus.fa.gz` for host filtering (masked human genome which can be obtained [here](https://drive.google.com/file/d/0B3llHR93L14wd0pSSnFULUlhcUk/edit?resourcekey=0-PsIKmg2q4EvTGWGOUjsKGQ))
+
+If need be, you can also override the path to each database separately (see [nextflow.config](https://github.com/metagenlab/zshoman/blob/main/nextflow.config) for more details).
+
+### Main options
+
+The pipeline has two main branches, either making a gene catalog and doing functional annotation for that catalog, or making the functional annotation independently for each sample. The former makes comparison of genes between samples easier, but requires rerunning a large portion of the pipeline if a new sample needs to be added. These branches can be skipped with `--skip_gene_catalog` and `--skip_per_sample`. Other parts of the pipeline can also be skipped (see [nextflow.config](https://github.com/metagenlab/zshoman/blob/main/nextflow.config) for more details).
+
 
 ## Running the pipeline on obelix
 
@@ -23,7 +47,7 @@ To run the pipeline on obelix:
 
 ## Creating the MicroEuk90 database
 
-For Eukaryotic gene calling we use MetaEuk, which requires a database to match genes against. We propose to use the MicroEuk database from [veba](https://github.com/jolespin/veba). When downloading the database you get a database with all sequences and some files containing clusters for the database clustered at 90% and 50% sequence identity. We propose to use the 90% sequence identity clustering. For this we need to generate the database from the `MicroEuk100.faa.gz` and `MicroEuk90_clusters.tsv.gz` files. This can be easily done by getting the set of unique identifiers from the first column of `MicroEuk90_clusters.tsv.gz`, writing that to a file `MicroEuk90_representatives.csv` and reusing that to filter the database with `seqtk subseq MicroEuk100.faa.gz MicroEuk90_representatives.csv  | gzip --no-name > MicroEuk90.faa.gz`.
+For Eukaryotic gene calling we use MetaEuk, which requires a database to match genes against. We propose to use the MicroEuk database from [veba](https://github.com/jolespin/veba). When downloading the database (see https://github.com/jolespin/veba/tree/main/data/MicroEuk_v3) you get a database with all sequences and some files containing clusters for the database clustered at 90% and 50% sequence identity. We propose to use the 90% sequence identity clustering. For this we need to generate the database from the `MicroEuk100.faa.gz` and `MicroEuk90_clusters.tsv.gz` files. This can be easily done by getting the set of unique identifiers from the first column of `MicroEuk90_clusters.tsv.gz`, writing that to a file `MicroEuk90_representatives.csv` and reusing that to filter the database with `seqtk subseq MicroEuk100.faa.gz MicroEuk90_representatives.csv  | gzip --no-name > MicroEuk90.faa.gz`.
 
 ## Post-processing
 

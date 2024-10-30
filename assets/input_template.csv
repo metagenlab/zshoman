@@ -1,0 +1,3 @@
+SAMPLE1_LABEL,/path/to/sample1/forward_reads.fastq,/path/to/sample1/reverse_reads.fastq
+SAMPLE1_LABEL,/path/to/sample2/forward_reads.fastq,/path/to/sample2/reverse_reads.fastq
+SAMPLE3_LABEL,/path/to/sample3/reads.fastq,
