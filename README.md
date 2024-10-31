@@ -12,6 +12,21 @@ An overview of the pipeline is shown below:
 
 ## Running the pipeline
 
+The pipeline needs nextflow 23.10.0 or later to run. You can for example install nextflow with `conda`.
+You will also need to clone this repository, and you can then simply run the pipeline (`main.nf`) with nextflow.
+Overall the following should work:
+
+```
+
+conda create -n nextflow nextflow -c bioconda
+conda activate nextflow
+git clone git@github.com:metagenlab/zshoman.git
+cd zshoman
+nextflow run main.nf --input path/to/samplesheet.csv --db_dir path/to/databases
+```
+
+To see the full list of parameters you can use `nextflow run main.nf --help`
+
 ### Input
 
 Input is a csv file with 2 or 3 columns:
