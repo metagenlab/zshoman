@@ -33,24 +33,29 @@ include { PIGZ_COMPRESS as PIGZ_COMPRESS_2 } from './modules/nf-core/pigz/compre
 include { PRODIGAL } from './modules/nf-core/prodigal/main'
 include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
 include { SPADES } from './modules/nf-core/spades/main'
+include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
+
+
+// Validate input parameters
+validateParameters()
+
+// Print summary of supplied parameters
+log.info paramsSummaryLog(workflow)
 
 
 workflow {
-    // Read input file
-    input_file = Channel.fromPath(params.input)
-    samples = input_file
-        .splitCsv(header: false, strip: false, limit: 1662)
+    // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
+    samples = Channel.fromList(samplesheetToList(params.input, "assets/schema_input.json"))
 
-    // Prepare metadata for samples to distinguish single from paired-end reads
+    // Update the metadata with the single_end parameter and put reads files in a list
     samples = samples.map( {
         row ->
-            if (!row[2].strip()) {
-                return new Tuple ([ id:row[0], single_end:true ], [ row[1] ])
+            if (!row[2]) {
+                return new Tuple (row[0] + [ single_end:true ], [ row[1] ])
             } else {
-                return new Tuple ([ id:row[0], single_end:false ], [ row[1], row[2] ])
+                return new Tuple (row[0] + [ single_end:false ], [ row[1], row[2] ])
             }
         })
-
 
     ///////////////////
     // PREPROCESSING //
