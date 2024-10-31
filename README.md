@@ -42,7 +42,7 @@ To run the pipeline on obelix:
 - start a screen
 - get an allocation for running nextflow (`salloc --cpus-per-task=1 --partition=long`)
 - activate nextflow environment `conda activate nextflow`
-- run the pipeline `nextflow run /mnt/slow_storage/metagenlab/zshoman/zshoman.nf --input samples_test.csv --db_dir  /mnt/slow_storage/databases/ -resume -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config
+- run the pipeline `nextflow run /mnt/slow_storage/metagenlab/zshoman/main.nf --input samples_test.csv --db_dir  /mnt/slow_storage/databases/ -resume -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config
 `
 
 ## Creating the MicroEuk90 database
