@@ -14,7 +14,13 @@ An overview of the pipeline is shown below:
 
 ### Input
 
-Input is a csv file with 3 columns: label, path to forward reads, path to reverse reads. For single-end samples, last column should be left empty. See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) for an example.
+Input is a csv file with 2 or 3 columns:
+
+- sample: label of the samples
+- fastq_1: path to forward reads
+- fastq_2: optional. path to reverse reads
+
+For single-end samples, the `fastq_2` can be omitted or left empty. The first row should contain the column headers (`sample`, `fastq_1`, `fastq_2`). See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) for an example.
 
 ### Databases
 
