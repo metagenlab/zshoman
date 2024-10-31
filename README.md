@@ -14,7 +14,13 @@ An overview of the pipeline is shown below:
 
 ### Input
 
-Input is a csv file with 3 columns: label, path to forward reads, path to reverse reads. For single-end samples, last column should be left empty. See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) for an example.
+Input is a csv file with 2 or 3 columns:
+
+- sample: label of the samples
+- fastq_1: path to forward reads
+- fastq_2: optional. path to reverse reads
+
+For single-end samples, the `fastq_2` can be omitted or left empty. The first row should contain the column headers (`sample`, `fastq_1`, `fastq_2`). See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) for an example.
 
 ### Databases
 
@@ -42,7 +48,7 @@ To run the pipeline on obelix:
 - start a screen
 - get an allocation for running nextflow (`salloc --cpus-per-task=1 --partition=long`)
 - activate nextflow environment `conda activate nextflow`
-- run the pipeline `nextflow run /mnt/slow_storage/metagenlab/zshoman/zshoman.nf --input samples_test.csv --db_dir  /mnt/slow_storage/databases/ -resume -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config
+- run the pipeline `nextflow run /mnt/slow_storage/metagenlab/zshoman/main.nf --input samples_test.csv --db_dir  /mnt/slow_storage/databases/ -resume -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config
 `
 
 ## Creating the MicroEuk90 database
