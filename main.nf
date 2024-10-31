@@ -56,12 +56,12 @@ workflow {
     // PREPROCESSING //
     ///////////////////
 
-    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.references.adapters, false).reads
-    phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.references.phix, false).reads
+    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.adapters, false).reads
+    phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.phix, false).reads
     qf_reads = BBDUK_QUALITY_FILTERING(phix_filtered_reads, [], true).reads
     qf_singletons = BBDUK_QUALITY_FILTERING.out.singletons.map({ new Tuple (it[0] + [single_end:true], it[1]) })
 
-    host_index = BBMAP_INDEX_HOST(params.references.masked_human)
+    host_index = BBMAP_INDEX_HOST(params.masked_human)
 
     hf_reads = BBMAP_FILTER_HOST(qf_reads, host_index.index).reads
     hf_singletons = BBMAP_FILTER_HOST_SINGLETONS(qf_singletons, host_index.index).reads
