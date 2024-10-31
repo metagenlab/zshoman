@@ -13,6 +13,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
+- Add script to collect (copy and rename) output files to new location. ([#8](https://github.com/metagenlab/zshoman/pull/8)) (Niklaus Johner)
 
 ## 0.9.0 - 2024-10-31
 
