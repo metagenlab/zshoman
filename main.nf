@@ -101,80 +101,80 @@ workflow {
         phanta = PHANTA_PROFILE(hf_reads, params.phanta_db)
     }
 
+    if (!params.skip_assembly) {
+            ///////////////////////////////
+            // Assembly and gene calling //
+            ///////////////////////////////
 
-    if (!params.skip_assembly && !params.skip_gene_catalog) {
-        ///////////////////////////////
-        // Assembly and gene calling //
-        ///////////////////////////////
+            scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
 
-        scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+            assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
+            contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
 
-        assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
-        contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
+            filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
+            assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
-        filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
-        assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+            prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
+            eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
 
-        prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
-        eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
+            // we need to compress the output from MetaEuk so that both eukaryotic
+            // and prokaryotic genes are compressed
+            eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
+            eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
 
+        if (!params.skip_gene_catalog) {
+            //////////////////
+            // Gene catalog //
+            //////////////////
 
-        // we need to compress the output from MetaEuk so that both eukaryotic
-        // and prokaryotic genes are compressed
-        eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
-        eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
+            // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
+            all_amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
+                            .collectFile( {row ->  [ "genes.faa.gz", row[1] ]} )
+                            .map( { new Tuple([id: 'all'], it )} )
+            all_nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt)
+                            .collectFile( {row ->  [ "genes.fna.gz", row[1] ]} )
+                            .map( { new Tuple([id: 'all'], it )} )
 
-        //////////////////
-        // Gene catalog //
-        //////////////////
+            gene_catalog_nt = CDHIT_CDHITEST(all_nucleotides).fasta
 
-        // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
-        all_amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
-                        .collectFile( {row ->  [ "genes.faa.gz", row[1] ]} )
-                        .map( { new Tuple([id: 'all'], it )} )
-        all_nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt)
-                        .collectFile( {row ->  [ "genes.fna.gz", row[1] ]} )
-                        .map( { new Tuple([id: 'all'], it )} )
+            headers = GET_HEADERS(gene_catalog_nt).headers
+            gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map( { it[1] } ).first()).sequences
 
-        gene_catalog_nt = CDHIT_CDHITEST(all_nucleotides).fasta
-
-        headers = GET_HEADERS(gene_catalog_nt).headers
-        gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map( { it[1] } ).first()).sequences
-
-        catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
-        aligned_reads = BWA_MEM_GC(reads.combine(catalog_index).map( { new Tuple(it[0], it[1], it[3]) } ), false).bam
-        filtered_reads = FILTERSAM_GC(aligned_reads).reads
-        NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
-
-
-        ///////////////////////////
-        // Functional annotation //
-        ///////////////////////////
-
-        EGGNOGMAPPER_GC(gene_catalog_aa, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
-    }
-
-    if (!params.skip_assembly && !params.skip_per_sample) {
-        /////////////////////////////////////
-        // Genes counts individual samples //
-        /////////////////////////////////////
-
-        // Let's gather the prokaryotic genes and eukaryotic genes together
-        amino_acids = CAT_AA(prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()).file_out
-        nucleotides = CAT_NT(prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()).file_out
-
-        catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
-        reads_index = reads.join(catalog_index)
-        aligned_reads = BWA_MEM_SAMPLES(reads_index, false).bam
-        filtered_reads = FILTERSAM_SAMPLES(aligned_reads).reads
-        NORMALIZE_COUNTS_SAMPLES(filtered_reads.join(motus_profiles))
+            catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
+            aligned_reads = BWA_MEM_GC(reads.combine(catalog_index).map( { new Tuple(it[0], it[1], it[3]) } ), false).bam
+            filtered_reads = FILTERSAM_GC(aligned_reads).reads
+            NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
 
 
-        ///////////////////////////////////
-        // Functional individual samples //
-        ///////////////////////////////////
+            ///////////////////////////
+            // Functional annotation //
+            ///////////////////////////
 
-        EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+            EGGNOGMAPPER_GC(gene_catalog_aa, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+        }
+
+        if (!params.skip_per_sample) {
+            /////////////////////////////////////
+            // Genes counts individual samples //
+            /////////////////////////////////////
+
+            // Let's gather the prokaryotic genes and eukaryotic genes together
+            amino_acids = CAT_AA(prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()).file_out
+            nucleotides = CAT_NT(prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()).file_out
+
+            catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
+            reads_index = reads.join(catalog_index)
+            aligned_reads = BWA_MEM_SAMPLES(reads_index, false).bam
+            filtered_reads = FILTERSAM_SAMPLES(aligned_reads).reads
+            NORMALIZE_COUNTS_SAMPLES(filtered_reads.join(motus_profiles))
+
+
+            ///////////////////////////////////
+            // Functional individual samples //
+            ///////////////////////////////////
+
+            EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+        }
     }
 }
 

@@ -9,6 +9,8 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Fixed
 
+- Fix pipeline for running only per sample analyses. ([#9](https://github.com/metagenlab/zshoman/pull/9)) (Niklaus Johner)
+
 ### Changed
 
 ### Added
