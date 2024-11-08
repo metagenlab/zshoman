@@ -1,0 +1,15 @@
+Changes in module 'nf-core/metaeuk/easypredict'
+--- modules/nf-core/metaeuk/easypredict/main.nf
++++ modules/nf-core/metaeuk/easypredict/main.nf
+@@ -40,6 +40,9 @@
+         tmp/ \\
+         ${args}
+ 
++    # The tmp directory is huge and does not get cleaned-up by the nf-boost plugin
++    rm -rf tmp
++
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+         metaeuk: \$(metaeuk | grep 'Version' | sed 's/metaeuk Version: //')
+
+************************************************************

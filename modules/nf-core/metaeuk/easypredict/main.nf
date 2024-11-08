@@ -40,6 +40,9 @@ process METAEUK_EASYPREDICT {
         tmp/ \\
         ${args}
 
+    # The tmp directory is huge and does not get cleaned-up by the nf-boost plugin
+    rm -rf tmp
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         metaeuk: \$(metaeuk | grep 'Version' | sed 's/metaeuk Version: //')
