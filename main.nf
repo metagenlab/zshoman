@@ -163,6 +163,16 @@ workflow {
         // Assembly and gene calling //
         ///////////////////////////////
 
+        // For now we do not have the necessary files in the ouput directory to
+        // skip individual steps of this part of the pipeline. We can only skip
+        // whole samples if we are not making a gene catalog...
+        if (params.skip_gene_catalog) {
+            preprocessed_samples = preprocessed_samples.filter({
+                Files.notExists(Paths.get(params.outdir, it[0].id, "annotations")) ||
+                Files.notExists(Paths.get(params.outdir, it[0].id, "gene_counts"))
+                })
+        }
+
         scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
 
         assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
