@@ -14,6 +14,7 @@ to [Common Changelog](https://common-changelog.org)
 ### Changed
 
 - Publish log files to output directory. ([#9](https://github.com/metagenlab/zshoman/pull/9)) (Niklaus Johner)
+- Avoid rerunning processes leading to output already present in the output directory. ([#10](https://github.com/metagenlab/zshoman/pull/10)) (Niklaus Johner)
 
 ### Added
 
