@@ -133,7 +133,22 @@ workflow {
     /////////////////////////
 
     if (!params.skip_motus) {
-        motus_profiles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
+        // Skip samples for which motus has already been run and readd afterwards
+        samples_motus = preprocessed_samples.branch({
+            done: Files.isDirectory(Paths.get(params.outdir, it[0].id, "motus"))
+            to_do: true
+            })
+
+        motus_profiles = MOTUS_PROFILE(samples_motus.to_do, params.motus_db).motus
+
+        motus_profiles = motus_profiles.mix(
+            samples_motus.done.map({
+                new Tuple (
+                    it[0],
+                    Paths.get(params.outdir, it[0].id, "motus", "${it[0].id}.motus")
+                    )
+                })
+            )
     }
 
     if (!params.skip_phanta) {
