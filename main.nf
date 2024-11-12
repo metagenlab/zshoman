@@ -153,7 +153,9 @@ workflow {
 
     if (!params.skip_phanta) {
         // we cannot use the singletons nor the merged reads here so he use hf_reads instead.
-        phanta = PHANTA_PROFILE(hf_reads, params.phanta_db)
+        PHANTA_PROFILE(
+            hf_reads.filter({Files.notExists(Paths.get(params.outdir, it[0].id, "phanta"))}),
+            params.phanta_db)
     }
 
     if (!params.skip_assembly) {
