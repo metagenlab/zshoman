@@ -159,25 +159,25 @@ workflow {
     }
 
     if (!params.skip_assembly) {
-            ///////////////////////////////
-            // Assembly and gene calling //
-            ///////////////////////////////
+        ///////////////////////////////
+        // Assembly and gene calling //
+        ///////////////////////////////
 
-            scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+        scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
 
-            assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
-            contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
+        assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
+        contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
 
-            filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
-            assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+        filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
+        assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
-            prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
-            eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
+        prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
+        eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
 
-            // we need to compress the output from MetaEuk so that both eukaryotic
-            // and prokaryotic genes are compressed
-            eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
-            eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
+        // we need to compress the output from MetaEuk so that both eukaryotic
+        // and prokaryotic genes are compressed
+        eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
+        eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
 
         if (!params.skip_gene_catalog) {
             //////////////////
