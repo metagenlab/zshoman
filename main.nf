@@ -35,6 +35,8 @@ include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
 include { SPADES } from './modules/nf-core/spades/main'
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
+import java.nio.file.Paths
+import java.nio.file.Files
 
 // Validate input parameters
 validateParameters()
@@ -61,7 +63,14 @@ workflow {
     // PREPROCESSING //
     ///////////////////
 
-    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.adapters, false).reads
+    // We will skip preprocessing for samples which already have the preprocessed
+    // folder in the ouput
+    samples = samples.branch({
+        already_preprocessed: Files.isDirectory(Paths.get(params.outdir, it[0].id, "preprocessed_reads"))
+        to_preprocess: true
+        })
+
+    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples.to_preprocess, params.adapters, false).reads
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.phix, false).reads
     qf_reads = BBDUK_QUALITY_FILTERING(phix_filtered_reads, [], true).reads
     qf_singletons = BBDUK_QUALITY_FILTERING.out.singletons.map({ new Tuple (it[0] + [single_end:true], it[1]) })
@@ -85,6 +94,37 @@ workflow {
     paired_end_reads = paired_end_reads.join(paired_end_reads_merged.merged.join(paired_end_reads_merged.unmerged))
     paired_end_reads = paired_end_reads.map({ new Tuple (it[0], it[3] + [it[2]] + [it[1]]) })
     preprocessed_samples = hf_reads_split.single.mix(paired_end_reads)
+
+    // Add the samples that had already been preprocessed
+    preprocessed_samples = preprocessed_samples.mix(
+        samples.already_preprocessed.map({
+            it[0].single_end ?
+            new Tuple (
+                it[0],
+                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")
+                ):
+            new Tuple (
+                it[0],
+                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1_unmerged.fastq.gz"),
+                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2_unmerged.fastq.gz"),
+                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_merged.fastq.gz"),
+                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_singletons.fastq.gz")
+                )
+    }))
+    hf_reads = hf_reads.mix(
+        samples.already_preprocessed.map({
+            it[0].single_end ?
+            new Tuple (
+                it[0],
+                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")
+                ):
+            new Tuple (
+                it[0],
+                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1.fastq.gz"),
+                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2.fastq.gz")
+                )
+    }))
+
     // Make sure we have a single fastq file for all reads per sample
     reads = CAT_FASTQ(preprocessed_samples, true).reads
 
