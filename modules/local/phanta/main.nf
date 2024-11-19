@@ -1,7 +1,7 @@
 process PHANTA_PROFILE {
     tag "$meta.id"
-    label 'process_high'
-    label 'process_high_memory'
+    label 'process_single'
+    label 'process_medium_memory'
 
     conda "${moduleDir}/environment.yml"
     container "docker://metagenlab/phanta:1.1"
