@@ -76,6 +76,8 @@ process SPADES {
         mv warnings.log ${prefix}.warnings.log
     fi
 
+    rm -rf tmp K21 K33 K55 K77 misc
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed -n 's/^.*SPAdes genome assembler v//p')
