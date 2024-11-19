@@ -46,6 +46,7 @@ log.info paramsSummaryLog(workflow)
 
 
 workflow {
+    outdir_abs = Paths.get(params.outdir).toAbsolutePath().toString()
     // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
     samples = Channel.fromList(samplesheetToList(params.input, "assets/schema_input.json"))
 
@@ -66,7 +67,7 @@ workflow {
     // We will skip preprocessing for samples which already have the preprocessed
     // folder in the ouput
     samples = samples.branch({
-        already_preprocessed: Files.isDirectory(Paths.get(params.outdir, it[0].id, "preprocessed_reads"))
+        already_preprocessed: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
         to_preprocess: true
         })
 
@@ -101,27 +102,28 @@ workflow {
             it[0].single_end ?
             new Tuple (
                 it[0],
-                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]
                 ):
             new Tuple (
                 it[0],
-                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1_unmerged.fastq.gz"),
-                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2_unmerged.fastq.gz"),
-                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_merged.fastq.gz"),
-                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_singletons.fastq.gz")
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_1_unmerged.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_2_unmerged.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_merged.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_singletons.fastq.gz")]
                 )
     }))
+
     hf_reads = hf_reads.mix(
         samples.already_preprocessed.map({
             it[0].single_end ?
             new Tuple (
                 it[0],
-                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]
                 ):
             new Tuple (
                 it[0],
-                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1.fastq.gz"),
-                Paths.get(params.outdir, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2.fastq.gz")
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2.fastq.gz")]
                 )
     }))
 
@@ -135,7 +137,7 @@ workflow {
     if (!params.skip_motus) {
         // Skip samples for which motus has already been run and readd afterwards
         samples_motus = preprocessed_samples.branch({
-            done: Files.isDirectory(Paths.get(params.outdir, it[0].id, "motus"))
+            done: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "motus"))
             to_do: true
             })
 
@@ -145,7 +147,7 @@ workflow {
             samples_motus.done.map({
                 new Tuple (
                     it[0],
-                    Paths.get(params.outdir, it[0].id, "motus", "${it[0].id}.motus")
+                    Paths.get(outdir_abs, it[0].id, "motus", "${it[0].id}.motus")
                     )
                 })
             )
@@ -154,7 +156,7 @@ workflow {
     if (!params.skip_phanta) {
         // we cannot use the singletons nor the merged reads here so he use hf_reads instead.
         PHANTA_PROFILE(
-            hf_reads.filter({Files.notExists(Paths.get(params.outdir, it[0].id, "phanta"))}),
+            hf_reads.filter({Files.notExists(Paths.get(outdir_abs, it[0].id, "phanta"))}),
             params.phanta_db)
     }
 
@@ -168,8 +170,8 @@ workflow {
         // whole samples if we are not making a gene catalog...
         if (params.skip_gene_catalog) {
             preprocessed_samples = preprocessed_samples.filter({
-                Files.notExists(Paths.get(params.outdir, it[0].id, "annotations")) ||
-                Files.notExists(Paths.get(params.outdir, it[0].id, "gene_counts"))
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
                 })
         }
 
