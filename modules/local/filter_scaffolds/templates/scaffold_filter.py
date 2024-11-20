@@ -48,6 +48,7 @@ def main():
 
     classifier = DomainClassifier("$classification")
 
+    filtered = 0
     prefix = f'{outprefix}.{seqtype}s.min{filtersize}'
     with open(f'{prefix}.fasta', 'w') as handle_all, \
          open(f'{prefix}.hashes', 'w') as handle_hashes, \
@@ -57,6 +58,7 @@ def main():
             sequence = sequence.upper()
             seqlen = len(sequence)
             if seqlen < filtersize:
+                filtered += 1
                 continue
             sequence_rev = str(Seq(sequence).reverse_complement())
             md5_fw = hashlib.md5(sequence.encode()).hexdigest()
@@ -69,6 +71,9 @@ def main():
                 handle_euk.write(f'>{seqname}\\n{sequence}\\n')
             else:
                 handle_prok.write(f'>{seqname}\\n{sequence}\\n')
+    with open(f'{outprefix}.{seqtype}s.scaffold_filter.log', "w") as logfile:
+        logfile.write("sample, #scaffolds, #filtered scaffolds\\n")
+        logfile.write(f"{samplename}, {cnt + 1}, {filtered}\\n")
 
 
 if __name__ == '__main__':
