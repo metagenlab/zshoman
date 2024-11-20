@@ -35,6 +35,8 @@ include { SEQTK_SUBSEQ } from './modules/nf-core/seqtk/subseq/main'
 include { SPADES } from './modules/nf-core/spades/main'
 include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 
+import java.nio.file.Paths
+import java.nio.file.Files
 
 // Validate input parameters
 validateParameters()
@@ -44,6 +46,7 @@ log.info paramsSummaryLog(workflow)
 
 
 workflow {
+    outdir_abs = Paths.get(params.outdir).toAbsolutePath().toString()
     // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
     samples = Channel.fromList(samplesheetToList(params.input, "assets/schema_input.json"))
 
@@ -61,7 +64,14 @@ workflow {
     // PREPROCESSING //
     ///////////////////
 
-    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples, params.adapters, false).reads
+    // We will skip preprocessing for samples which already have the preprocessed
+    // folder in the ouput
+    samples = samples.branch({
+        already_preprocessed: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
+        to_preprocess: true
+        })
+
+    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples.to_preprocess, params.adapters, false).reads
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.phix, false).reads
     qf_reads = BBDUK_QUALITY_FILTERING(phix_filtered_reads, [], true).reads
     qf_singletons = BBDUK_QUALITY_FILTERING.out.singletons.map({ new Tuple (it[0] + [single_end:true], it[1]) })
@@ -85,6 +95,38 @@ workflow {
     paired_end_reads = paired_end_reads.join(paired_end_reads_merged.merged.join(paired_end_reads_merged.unmerged))
     paired_end_reads = paired_end_reads.map({ new Tuple (it[0], it[3] + [it[2]] + [it[1]]) })
     preprocessed_samples = hf_reads_split.single.mix(paired_end_reads)
+
+    // Add the samples that had already been preprocessed
+    preprocessed_samples = preprocessed_samples.mix(
+        samples.already_preprocessed.map({
+            it[0].single_end ?
+            new Tuple (
+                it[0],
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]
+                ):
+            new Tuple (
+                it[0],
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_1_unmerged.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_2_unmerged.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_merged.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_singletons.fastq.gz")]
+                )
+    }))
+
+    hf_reads = hf_reads.mix(
+        samples.already_preprocessed.map({
+            it[0].single_end ?
+            new Tuple (
+                it[0],
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]
+                ):
+            new Tuple (
+                it[0],
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2.fastq.gz")]
+                )
+    }))
+
     // Make sure we have a single fastq file for all reads per sample
     reads = CAT_FASTQ(preprocessed_samples, true).reads
 
@@ -93,34 +135,83 @@ workflow {
     /////////////////////////
 
     if (!params.skip_motus) {
-        motus_profiles = MOTUS_PROFILE(preprocessed_samples, params.motus_db).motus
+        // Skip samples for which motus has already been run and readd afterwards
+        samples_motus = preprocessed_samples.branch({
+            done: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "motus"))
+            to_do: true
+            })
+
+        motus_profiles = MOTUS_PROFILE(samples_motus.to_do, params.motus_db).motus
+
+        motus_profiles = motus_profiles.mix(
+            samples_motus.done.map({
+                new Tuple (
+                    it[0],
+                    Paths.get(outdir_abs, it[0].id, "motus", "${it[0].id}.motus")
+                    )
+                })
+            )
     }
 
     if (!params.skip_phanta) {
         // we cannot use the singletons nor the merged reads here so he use hf_reads instead.
-        phanta = PHANTA_PROFILE(hf_reads, params.phanta_db)
+        PHANTA_PROFILE(
+            hf_reads.filter({Files.notExists(Paths.get(outdir_abs, it[0].id, "phanta"))}),
+            params.phanta_db)
     }
 
     if (!params.skip_assembly) {
-            ///////////////////////////////
-            // Assembly and gene calling //
-            ///////////////////////////////
+        ///////////////////////////////
+        // Assembly and gene calling //
+        ///////////////////////////////
 
-            scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+        // If we are not making a gene catalog we can skip samples for which we
+        // already have the annotaions and gene counts.
+        if (params.skip_gene_catalog) {
+            preprocessed_samples = preprocessed_samples.filter({
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
+                })
+        }
 
-            assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
-            contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
+        // Skip samples for which spades has already been run and readd afterwards
+        samples_spades = preprocessed_samples.branch({
+            done: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "assembly"))
+            to_do: true
+            })
 
-            filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
-            assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+        SPADES(samples_spades.to_do.map({ new Tuple (it[0], it[1], [], []) }), [], [])
 
-            prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
-            eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
+        scaffolds = SPADES.out.scaffolds.mix(
+            samples_spades.done.map({new Tuple (
+                it[0],
+                Paths.get(outdir_abs, it[0].id, "assembly", "${it[0].id}.scaffolds.fa.gz"))
+            }))
+        graphs = SPADES.out.gfa.mix(
+            samples_spades.done.map({new Tuple (
+                it[0],
+                Paths.get(outdir_abs, it[0].id, "assembly", "${it[0].id}.assembly.gfa.gz"))
+            }))
+        paths = SPADES.out.assembly_paths.mix(
+            samples_spades.done.map({new Tuple (
+                it[0],
+                Paths.get(outdir_abs, it[0].id, "assembly", "${it[0].id}.scaffolds.paths.gz"))
+            }))
 
-            // we need to compress the output from MetaEuk so that both eukaryotic
-            // and prokaryotic genes are compressed
-            eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
-            eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
+        assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
+
+        contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
+
+        filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
+        assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+
+        prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
+        eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
+
+        // we need to compress the output from MetaEuk so that both eukaryotic
+        // and prokaryotic genes are compressed
+        eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
+        eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
 
         if (!params.skip_gene_catalog) {
             //////////////////
