@@ -165,9 +165,8 @@ workflow {
         // Assembly and gene calling //
         ///////////////////////////////
 
-        // For now we do not have the necessary files in the ouput directory to
-        // skip individual steps of this part of the pipeline. We can only skip
-        // whole samples if we are not making a gene catalog...
+        // If we are not making a gene catalog we can skip samples for which we
+        // already have the annotaions and gene counts.
         if (params.skip_gene_catalog) {
             preprocessed_samples = preprocessed_samples.filter({
                 Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
@@ -175,9 +174,32 @@ workflow {
                 })
         }
 
-        scaffolds = SPADES(preprocessed_samples.map({ new Tuple (it[0], it[1], [], []) }), [], []).scaffolds
+        // Skip samples for which spades has already been run and readd afterwards
+        samples_spades = preprocessed_samples.branch({
+            done: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "assembly"))
+            to_do: true
+            })
+
+        SPADES(samples_spades.to_do.map({ new Tuple (it[0], it[1], [], []) }), [], [])
+
+        scaffolds = SPADES.out.scaffolds.mix(
+            samples_spades.done.map({new Tuple (
+                it[0],
+                Paths.get(outdir_abs, it[0].id, "assembly", "${it[0].id}.scaffolds.fa.gz"))
+            }))
+        graphs = SPADES.out.gfa.mix(
+            samples_spades.done.map({new Tuple (
+                it[0],
+                Paths.get(outdir_abs, it[0].id, "assembly", "${it[0].id}.assembly.gfa.gz"))
+            }))
+        paths = SPADES.out.assembly_paths.mix(
+            samples_spades.done.map({new Tuple (
+                it[0],
+                Paths.get(outdir_abs, it[0].id, "assembly", "${it[0].id}.scaffolds.paths.gz"))
+            }))
 
         assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
+
         contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
 
         filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
