@@ -8,7 +8,7 @@ import argparse
 import logging
 import os
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import pandas as pd
@@ -25,11 +25,11 @@ class ProcessWithRegex():
     def __call__(self):
         with self.file.open() as handler:
             content = handler.read()
-        res = {}
+        res = Counter()
         for pattern in self.patterns:
-            match = pattern.search(content)
-            if match:
-                res.update(match.groupdict())
+            for match in pattern.finditer(content):
+                res.update({key: float(value)
+                            for key, value in match.groupdict().items()})
         return res
 
 
@@ -56,6 +56,16 @@ class ProcessBBduk(ProcessWithRegex):
                 r"\(.*\)\s+(?P<{1}_bases>\d+) bases \(.*\)".format(*terms),
                 re.MULTILINE)
             for terms in search_terms
+        ]
+
+
+class ProcessBBMap(ProcessWithRegex):
+
+    patterns = [
+        re.compile(r"^Reads Used:\s+(?P<reads>\d+)\s+\((?P<bases>\d+) bases\)",
+                   re.MULTILINE),
+        re.compile(r"^mapped:\s+[0-9\.]+%\s+(?P<mapped_reads>\d+)\s+[0-9\.]+%\s+(?P<mapped_bases>\d+)",
+                   re.MULTILINE),
         ]
 
 
@@ -86,4 +96,10 @@ if __name__ == '__main__':
 
         qf_log = Path(log_dir, f"{sample}_quality_filtered.bbduk.log")
         data[sample]["filter_phix"] = ProcessBBduk(qf_log)()
-    import pdb; pdb.set_trace()
+
+        hf_log = Path(log_dir, f"{sample}_host_filtered.bbmap.log")
+        data[sample]["filter_host"] = ProcessBBMap(hf_log)()
+
+        hf_log = Path(log_dir, f"{sample}_host_filtered_singletons.bbmap.log")
+        data[sample]["filter_host_singletons"] = ProcessBBMap(hf_log)()
+
