@@ -17,7 +17,23 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Post-processing")
 
 
-class ProcessBBduk():
+class ProcessWithRegex():
+
+    def __init__(self, logfile):
+        self.file = logfile
+
+    def __call__(self):
+        with self.file.open() as handler:
+            content = handler.read()
+        res = {}
+        for pattern in self.patterns:
+            match = pattern.search(content)
+            if match:
+                res.update(match.groupdict())
+        return res
+
+
+class ProcessBBduk(ProcessWithRegex):
 
     search_terms = (
         ("KTrimmed", "ktrimmed"),
@@ -41,19 +57,6 @@ class ProcessBBduk():
                 re.MULTILINE)
             for terms in search_terms
         ]
-
-    def __init__(self, logfile):
-        self.file = logfile
-
-    def __call__(self):
-        with self.file.open() as handler:
-            content = handler.read()
-        res = {}
-        for pattern in self.patterns:
-            match = pattern.search(content)
-            if match:
-                res.update(match.groupdict())
-        return res
 
 
 if __name__ == '__main__':
