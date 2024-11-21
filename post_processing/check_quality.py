@@ -19,22 +19,22 @@ logger = logging.getLogger("Post-processing")
 
 class ProcessBBduk():
 
+    search_terms = (
+        ("KTrimmed", "trimmed"),
+        ("Contaminants", "contaminants"),
+        ("Total Removed", "removed"),
+        ("Result", "result"),
+    )
+
+    search_string = r"^{0}:\s+(?P<{1}_reads>\d+) reads "\
+                    r"\(.*\)\s+(?P<{1}_bases>\d+) bases \(.*\)"
     patterns = [
         re.compile(r"^Input:\s+(?P<reads>\d+) reads\s+(?P<bases>\d+) bases.",
-                   re.MULTILINE),
-        re.compile(r"^KTrimmed:\s+(?P<trimmed_reads>\d+) reads "
-                   r"\(.*\)\s+(?P<trimmed_bases>\d+) bases \(.*\)",
-                   re.MULTILINE),
-        re.compile(r"^Contaminants:\s+(?P<contaminants_reads>\d+) reads "
-                   r"\(.*\)\s+(?P<contaminants_bases>\d+) bases \(.*\)",
-                   re.MULTILINE),
-        re.compile(r"^Total Removed:\s+(?P<removed_reads>\d+) reads "
-                   r"\(.*\)\s+(?P<removed_bases>\d+) bases \(.*\)",
-                   re.MULTILINE),
-        re.compile(r"^Result:\s+(?P<output_reads>\d+) reads "
-                   r"\(.*\)\s+(?P<output_bases>\d+) bases \(.*\)",
-                   re.MULTILINE),
-    ]
+                   re.MULTILINE)] + \
+        [
+            re.compile(search_string.format(*terms), re.MULTILINE)
+            for terms in search_terms
+        ]
 
     def __init__(self, logfile):
         self.file = logfile
