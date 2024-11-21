@@ -25,6 +25,9 @@ class ProcessBBduk():
         re.compile(r"^KTrimmed:\s+(?P<trimmed_reads>\d+) reads "
                    r"\(.*\)\s+(?P<trimmed_bases>\d+) bases \(.*\)",
                    re.MULTILINE),
+        re.compile(r"^Contaminants:\s+(?P<contaminants_reads>\d+) reads "
+                   r"\(.*\)\s+(?P<contaminants_bases>\d+) bases \(.*\)",
+                   re.MULTILINE),
         re.compile(r"^Total Removed:\s+(?P<removed_reads>\d+) reads "
                    r"\(.*\)\s+(?P<removed_bases>\d+) bases \(.*\)",
                    re.MULTILINE),
@@ -33,15 +36,17 @@ class ProcessBBduk():
                    re.MULTILINE),
     ]
 
-    def __init__(self, log_dir, sample):
-        self.file = Path(log_dir, f"{sample}_trimmed.bbduk.log")
+    def __init__(self, logfile):
+        self.file = logfile
 
     def __call__(self):
         with self.file.open() as handler:
             content = handler.read()
         res = {}
         for pattern in self.patterns:
-            res.update(pattern.search(content).groupdict())
+            match = pattern.search(content)
+            if match:
+                res.update(match.groupdict())
         return res
 
 
@@ -64,5 +69,8 @@ if __name__ == '__main__':
 
     data = defaultdict(dict)
     for sample in samples:
-        data[sample]["trim_adapters"] = ProcessBBduk(log_dir, sample)()
+        trim_log = Path(log_dir, f"{sample}_trimmed.bbduk.log")
+        data[sample]["trim_adapters"] = ProcessBBduk(trim_log)()
+        phix_log = Path(log_dir, f"{sample}_phix_filtered.bbduk.log")
+        data[sample]["filter_phix"] = ProcessBBduk(phix_log)()
     import pdb; pdb.set_trace()
