@@ -20,7 +20,9 @@ logger = logging.getLogger("Post-processing")
 class ProcessBBduk():
 
     search_terms = (
-        ("KTrimmed", "trimmed"),
+        ("KTrimmed", "ktrimmed"),
+        ("QTrimmed", "qtrimmed"),
+        ("Low quality discards", "lowq_discards"),
         ("Contaminants", "contaminants"),
         ("Total Removed", "removed"),
         ("Result", "result"),
@@ -28,11 +30,15 @@ class ProcessBBduk():
 
     search_string = r"^{0}:\s+(?P<{1}_reads>\d+) reads "\
                     r"\(.*\)\s+(?P<{1}_bases>\d+) bases \(.*\)"
+
     patterns = [
         re.compile(r"^Input:\s+(?P<reads>\d+) reads\s+(?P<bases>\d+) bases.",
                    re.MULTILINE)] + \
         [
-            re.compile(search_string.format(*terms), re.MULTILINE)
+            re.compile(
+                r"^{0}:\s+(?P<{1}_reads>\d+) reads "
+                r"\(.*\)\s+(?P<{1}_bases>\d+) bases \(.*\)".format(*terms),
+                re.MULTILINE)
             for terms in search_terms
         ]
 
@@ -71,6 +77,10 @@ if __name__ == '__main__':
     for sample in samples:
         trim_log = Path(log_dir, f"{sample}_trimmed.bbduk.log")
         data[sample]["trim_adapters"] = ProcessBBduk(trim_log)()
+
         phix_log = Path(log_dir, f"{sample}_phix_filtered.bbduk.log")
         data[sample]["filter_phix"] = ProcessBBduk(phix_log)()
+
+        qf_log = Path(log_dir, f"{sample}_quality_filtered.bbduk.log")
+        data[sample]["filter_phix"] = ProcessBBduk(qf_log)()
     import pdb; pdb.set_trace()
