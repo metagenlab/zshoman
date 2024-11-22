@@ -71,6 +71,14 @@ class ProcessBBMap(ProcessWithRegex):
         ]
 
 
+class ProcessBBMerge(ProcessWithRegex):
+
+    patterns = [
+        re.compile(r"^Pairs:\s+(?P<reads>\d+)", re.MULTILINE),
+        re.compile(r"^Joined:\s+(?P<joined_reads>\d+)", re.MULTILINE),
+        ]
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("check_quality.py")
     parser.add_argument("samples_file", help="path to samples csv file.")
@@ -105,3 +113,5 @@ if __name__ == '__main__':
         hf_log = Path(log_dir, f"{sample}_host_filtered_singletons.bbmap.log")
         data[sample]["filter_host_singletons"] = ProcessBBMap(hf_log)()
 
+        merge_log = Path(log_dir, f"{sample}.bbmerge.log")
+        data[sample]["merge_reads"] = ProcessBBMerge(merge_log)()
