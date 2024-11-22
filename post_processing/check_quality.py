@@ -104,10 +104,11 @@ if __name__ == '__main__':
         os.mkdir(args.output_dir)
 
     samples = pd.read_csv(args.samples_file, header=0)["sample"]
+    logger.info(f"Found {len(samples)} samples.")
     log_dir = Path(args.input_dir, "logs")
 
     data = defaultdict(dict)
-    for sample in samples:
+    for i, sample in enumerate(samples, 1):
         trim_log = Path(log_dir, f"{sample}_trimmed.bbduk.log")
         data[sample]["trim_adapters"] = ProcessBBduk(trim_log)()
 
@@ -127,3 +128,6 @@ if __name__ == '__main__':
         data[sample]["merge_reads"] = ProcessBBMerge(merge_log)()
 
         check_consistency(data[sample])
+
+        if i % 50 == 0:
+            logger.info(f"Done {i}/{len(samples)}")
