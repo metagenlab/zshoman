@@ -23,6 +23,8 @@ class ProcessWithRegex():
         self.file = logfile
 
     def __call__(self):
+        if not self.file.exists():
+            return Counter()
         with self.file.open() as handler:
             content = handler.read()
         res = Counter()
