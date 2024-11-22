@@ -79,6 +79,16 @@ class ProcessBBMerge(ProcessWithRegex):
         ]
 
 
+def check_consistency(data):
+    res_reads = data["trim_adapters"]["reads"]
+    for el in ["trim_adapters", "filter_phix", "filter_quality"]:
+        assert data[el]["reads"] - data[el]["removed_reads"] == data[el]["result_reads"]
+        # Check that input number of reads is ouput of previous step
+        assert data[el]["reads"] == res_reads
+        res_reads = data[el]["result_reads"]
+    assert data["filter_host"]["reads"] == res_reads
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("check_quality.py")
     parser.add_argument("samples_file", help="path to samples csv file.")
@@ -115,3 +125,5 @@ if __name__ == '__main__':
 
         merge_log = Path(log_dir, f"{sample}.bbmerge.log")
         data[sample]["merge_reads"] = ProcessBBMerge(merge_log)()
+
+        check_consistency(data[sample])
