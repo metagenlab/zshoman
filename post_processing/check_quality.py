@@ -97,7 +97,7 @@ if __name__ == '__main__':
         data[sample]["filter_phix"] = ProcessBBduk(phix_log)()
 
         qf_log = Path(log_dir, f"{sample}_quality_filtered.bbduk.log")
-        data[sample]["filter_phix"] = ProcessBBduk(qf_log)()
+        data[sample]["filter_quality"] = ProcessBBduk(qf_log)()
 
         hf_log = Path(log_dir, f"{sample}_host_filtered.bbmap.log")
         data[sample]["filter_host"] = ProcessBBMap(hf_log)()
