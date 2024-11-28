@@ -248,9 +248,13 @@ workflow {
             // Genes counts individual samples //
             /////////////////////////////////////
 
-            // Let's gather the prokaryotic genes and eukaryotic genes together
-            amino_acids = CAT_AA(prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()).file_out
-            nucleotides = CAT_NT(prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()).file_out
+            // We first gather the prokaryotic genes and eukaryotic genes together
+            nt_tuples = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()
+            // Avoid redoing the mapping and count calculation if it was already done
+            nt_tuples = nt_tuples.filter({
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
+                })
+            nucleotides = CAT_NT(nt_tuples).file_out
 
             catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
             reads_index = reads.join(catalog_index)
