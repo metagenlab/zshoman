@@ -166,7 +166,7 @@ workflow {
         ///////////////////////////////
 
         // If we are not making a gene catalog we can skip samples for which we
-        // already have the annotaions and gene counts.
+        // already have the annotations and gene counts.
         if (params.skip_gene_catalog) {
             preprocessed_samples = preprocessed_samples.filter({
                 Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
@@ -198,8 +198,7 @@ workflow {
                 Paths.get(outdir_abs, it[0].id, "assembly", "${it[0].id}.scaffolds.paths.gz"))
             }))
 
-        assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
-
+        assembly_graph_and_paths = scaffolds.join(graphs).join(paths)
         contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
 
         filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
@@ -249,9 +248,13 @@ workflow {
             // Genes counts individual samples //
             /////////////////////////////////////
 
-            // Let's gather the prokaryotic genes and eukaryotic genes together
-            amino_acids = CAT_AA(prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()).file_out
-            nucleotides = CAT_NT(prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()).file_out
+            // We first gather the prokaryotic genes and eukaryotic genes together
+            nt_tuples = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()
+            // Avoid redoing the mapping and count calculation if it was already done
+            nt_tuples = nt_tuples.filter({
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
+                })
+            nucleotides = CAT_NT(nt_tuples).file_out
 
             catalog_index = BWA_INDEX_SAMPLES(nucleotides).index
             reads_index = reads.join(catalog_index)
@@ -264,6 +267,13 @@ workflow {
             // Functional individual samples //
             ///////////////////////////////////
 
+            // We first gather the prokaryotic genes and eukaryotic genes together
+            aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()
+            // Avoid redoing the annotations if it was already done
+            aa_tuples = aa_tuples.filter({
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
+                })
+            amino_acids = CAT_AA(aa_tuples).file_out
             EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
         }
     }
