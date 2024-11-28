@@ -18,6 +18,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
+- Add post-processing script to check the quality of the results. ([#11](https://github.com/metagenlab/zshoman/pull/11)) (Niklaus Johner)
 - Add log file to filter_scaffolds process. ([#9](https://github.com/metagenlab/zshoman/pull/9)) (Niklaus Johner)
 - Add script to collect (copy and rename) output files to new location. ([#8](https://github.com/metagenlab/zshoman/pull/8)) (Niklaus Johner)
 - Add nf-boost plugin. ([#9](https://github.com/metagenlab/zshoman/pull/9)) (Niklaus Johner)
