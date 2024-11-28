@@ -166,7 +166,7 @@ workflow {
         ///////////////////////////////
 
         // If we are not making a gene catalog we can skip samples for which we
-        // already have the annotaions and gene counts.
+        // already have the annotations and gene counts.
         if (params.skip_gene_catalog) {
             preprocessed_samples = preprocessed_samples.filter({
                 Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
