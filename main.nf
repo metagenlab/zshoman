@@ -198,8 +198,7 @@ workflow {
                 Paths.get(outdir_abs, it[0].id, "assembly", "${it[0].id}.scaffolds.paths.gz"))
             }))
 
-        assembly_graph_and_paths = scaffolds.join(SPADES.out.gfa).join(SPADES.out.assembly_paths)
-
+        assembly_graph_and_paths = scaffolds.join(graphs).join(paths)
         contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
 
         filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
