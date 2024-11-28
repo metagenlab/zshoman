@@ -267,6 +267,13 @@ workflow {
             // Functional individual samples //
             ///////////////////////////////////
 
+            // We first gather the prokaryotic genes and eukaryotic genes together
+            aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()
+            // Avoid redoing the annotations if it was already done
+            aa_tuples = aa_tuples.filter({
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
+                })
+            amino_acids = CAT_AA(aa_tuples).file_out
             EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
         }
     }
