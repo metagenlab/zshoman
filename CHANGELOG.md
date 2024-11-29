@@ -19,6 +19,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
+- Add support for multi-lane samples. ([#15](https://github.com/metagenlab/zshoman/pull/15)) (Niklaus Johner)
 - Add various scripts for cleaning up the work and output directories. ([#14](https://github.com/metagenlab/zshoman/pull/14)) (Niklaus Johner)
 - Add post-processing script to check the quality of the results. ([#11](https://github.com/metagenlab/zshoman/pull/11)) (Niklaus Johner)
 - Add log file to filter_scaffolds process. ([#9](https://github.com/metagenlab/zshoman/pull/9)) (Niklaus Johner)
