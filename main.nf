@@ -14,6 +14,8 @@ include { BWA_MEM as BWA_MEM_GC } from './modules/nf-core/bwa/mem/main'
 include { BWA_MEM as BWA_MEM_SAMPLES } from './modules/nf-core/bwa/mem/main'
 include { CAT_CAT as CAT_AA } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_NT } from './modules/nf-core/cat/cat/main'
+include { CAT_CAT as CAT_R1 } from './modules/nf-core/cat/cat/main'
+include { CAT_CAT as CAT_R2 } from './modules/nf-core/cat/cat/main'
 include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
 include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
@@ -48,7 +50,38 @@ log.info paramsSummaryLog(workflow)
 workflow {
     outdir_abs = Paths.get(params.outdir).toAbsolutePath().toString()
     // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
-    samples = Channel.fromList(samplesheetToList(params.input, "assets/schema_input.json"))
+    samples = samplesheetToList(params.input, "assets/schema_input.json")
+
+    // We first need to deal with multilane samples.
+    // We collect the lanes into lists of files, concatenate them into a single
+    // file if there are several files and then recombine the channels.
+    samples = samples.collect({[it[0], it[1..4].findAll(), it[5..8].findAll()]})
+
+    samples = Channel.fromList(samples).branch({
+        single_lane: it[1].size()==1 && it[2].size()<=1
+        multi_lane: it[1].size()>1 && it[2].size()>1
+        other: true
+        })
+
+    samples.other.count().map({
+        if (it > 0) {
+            error "We do not support multiple lanes for single end samples."
+        }
+    })
+
+    r1_multi = samples.multi_lane.map({
+            [it[0], it[1]]
+        })
+    r2_multi = samples.multi_lane.map({
+            [it[0], it[2]]
+        })
+
+    r1_multi = CAT_R1(r1_multi).file_out
+    r2_multi = CAT_R2(r2_multi).file_out
+
+    samples = samples.single_lane.map({
+            [it[0], it[1][0], it[2][0]]
+        }).mix(r1_multi.join(r2_multi))
 
     // Update the metadata with the single_end parameter and put reads files in a list
     samples = samples.map( {
