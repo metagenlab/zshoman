@@ -60,11 +60,10 @@ The pipeline has two main branches, either making a gene catalog and doing funct
 
 To run the pipeline on obelix:
 
-- start a screen
-- get an allocation for running nextflow (`salloc --cpus-per-task=1 --partition=long`)
+- start a `screen` or `tmux`, depending on your religion
 - activate nextflow environment `conda activate nextflow`
-- run the pipeline `nextflow run /mnt/slow_storage/metagenlab/zshoman/main.nf --input samples_test.csv --db_dir  /mnt/slow_storage/databases/ -resume -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config
-`
+- run the pipeline `nextflow run /mnt/slow_storage/metagenlab/zshoman_dev/main.nf --input samples_test.csv --db_dir  /mnt/slow_storage/databases/ -resume -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config`
+
 
 ## Creating the MicroEuk90 database
 
