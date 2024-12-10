@@ -100,7 +100,7 @@ workflow {
     // We will skip preprocessing for samples which already have the preprocessed
     // folder in the ouput
     samples = samples.branch({
-        already_preprocessed: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
+        already_preprocessed: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
         to_preprocess: true
         })
 
@@ -170,7 +170,7 @@ workflow {
     if (!params.skip_motus) {
         // Skip samples for which motus has already been run and readd afterwards
         samples_motus = preprocessed_samples.branch({
-            done: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "motus"))
+            done: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "motus"))
             to_do: true
             })
 
@@ -189,7 +189,7 @@ workflow {
     if (!params.skip_phanta) {
         // we cannot use the singletons nor the merged reads here so he use hf_reads instead.
         PHANTA_PROFILE(
-            hf_reads.filter({Files.notExists(Paths.get(outdir_abs, it[0].id, "phanta"))}),
+            hf_reads.filter({(!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "phanta"))}),
             params.phanta_db)
     }
 
@@ -202,6 +202,7 @@ workflow {
         // already have the annotations and gene counts.
         if (params.skip_gene_catalog) {
             preprocessed_samples = preprocessed_samples.filter({
+                (!params.resume_from_output) ||
                 Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
                 Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
                 })
@@ -209,7 +210,7 @@ workflow {
 
         // Skip samples for which spades has already been run and readd afterwards
         samples_spades = preprocessed_samples.branch({
-            done: Files.isDirectory(Paths.get(outdir_abs, it[0].id, "assembly"))
+            done: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "assembly"))
             to_do: true
             })
 
@@ -285,7 +286,7 @@ workflow {
             nt_tuples = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()
             // Avoid redoing the mapping and count calculation if it was already done
             nt_tuples = nt_tuples.filter({
-                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
+                (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
                 })
             nucleotides = CAT_NT(nt_tuples).file_out
 
@@ -304,7 +305,7 @@ workflow {
             aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()
             // Avoid redoing the annotations if it was already done
             aa_tuples = aa_tuples.filter({
-                Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
+                (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
                 })
             amino_acids = CAT_AA(aa_tuples).file_out
             EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
