@@ -16,6 +16,7 @@ to [Common Changelog](https://common-changelog.org)
 - Publish log files to output directory. ([#9](https://github.com/metagenlab/zshoman/pull/9)) (Niklaus Johner)
 - Avoid rerunning processes leading to output already present in the output directory. ([#10](https://github.com/metagenlab/zshoman/pull/10), [#13](https://github.com/metagenlab/zshoman/pull/13)) (Niklaus Johner)
 - Optimize resources requested for METAEUK process. ([#11](https://github.com/metagenlab/zshoman/pull/11)) (Niklaus Johner)
+- Retry spades on error code 250. ([#17](https://github.com/metagenlab/zshoman/pull/17)) (Niklaus Johner)
 
 ### Added
 
