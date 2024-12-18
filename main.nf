@@ -239,7 +239,12 @@ workflow {
         assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
         prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
-        eukaryotic_genes = METAEUK_EASYPREDICT(FILTER_SCAFFOLDS.out.euk_scaffolds, params.metaeuk_db)
+        // We only predict eukaryotic genes if there are any (i.e. file is not empty)
+        // this channel will therefore not contain all the samples, but it's fine
+        // as we mix it back with the prokaryotic_genes channel afterwards.
+        eukaryotic_genes = METAEUK_EASYPREDICT(
+            FILTER_SCAFFOLDS.out.euk_scaffolds.filter({ it[1].size() > 0}),
+            params.metaeuk_db)
 
         // we need to compress the output from MetaEuk so that both eukaryotic
         // and prokaryotic genes are compressed
