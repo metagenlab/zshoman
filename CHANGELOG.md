@@ -21,9 +21,10 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
+- Add script to filter out already processed samples from input. ([#19](https://github.com/metagenlab/zshoman/pull/19)) (Niklaus Johner)
 - Add option *resume_from_output* to avoid using output directory to skip processes. ([#16](https://github.com/metagenlab/zshoman/pull/16)) (Niklaus Johner)
 - Add support for multi-lane samples. ([#15](https://github.com/metagenlab/zshoman/pull/15)) (Niklaus Johner)
-- Add various scripts for cleaning up the work and output directories. ([#14](https://github.com/metagenlab/zshoman/pull/14)) (Niklaus Johner)
+- Add various scripts for cleaning up the work and output directories. ([#14](https://github.com/metagenlab/zshoman/pull/14), [#19](https://github.com/metagenlab/zshoman/pull/19)) (Niklaus Johner)
 - Add post-processing script to check the quality of the results. ([#11](https://github.com/metagenlab/zshoman/pull/11)) (Niklaus Johner)
 - Add log file to filter_scaffolds process. ([#9](https://github.com/metagenlab/zshoman/pull/9)) (Niklaus Johner)
 - Add script to collect (copy and rename) output files to new location. ([#8](https://github.com/metagenlab/zshoman/pull/8)) (Niklaus Johner)
