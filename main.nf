@@ -288,7 +288,7 @@ workflow {
             /////////////////////////////////////
 
             // We first gather the prokaryotic genes and eukaryotic genes together
-            nt_tuples = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple()
+            nt_tuples = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple(size: 2, remainder: true)
             // Avoid redoing the mapping and count calculation if it was already done
             nt_tuples = nt_tuples.filter({
                 (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
@@ -307,7 +307,7 @@ workflow {
             ///////////////////////////////////
 
             // We first gather the prokaryotic genes and eukaryotic genes together
-            aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple()
+            aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple(size: 2, remainder: true)
             // Avoid redoing the annotations if it was already done
             aa_tuples = aa_tuples.filter({
                 (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
