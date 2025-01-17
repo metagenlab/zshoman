@@ -21,21 +21,24 @@ class SamplesCleaner():
         self.output_dir = Path(output_dir)
 
     def __call__(self):
-        data = samples = pd.read_csv(args.samples_file, header=0)
-        samples = data["sample"]
+        data = pd.read_csv(args.samples_file, header=0)
+        data.set_index("sample", inplace=True)
+        samples = data.index
         to_keep = []
         for sample in samples:
             for subdir in ("annotations", "assembly", "gene_counts", "motus",
                            "phanta", "preprocessed_reads"):
                 if not Path(self.output_dir, sample, subdir).exists():
                     to_keep.append(sample)
+                    logger.info(f"{sample}: missing {subdir}")
                     break
-        print(len(to_keep))
+
+        logger.info(f"Keeping {len(to_keep)} samples")
         outname = Path(self.sample_file.parent, self.sample_file.stem + "_filtered" + self.sample_file.suffix)
         if outname.exists():
             logger.warning("{} exists already, interrupting")
             sys.exit()
-        data[data["sample"].isin(to_keep)].to_csv(outname, index=False)
+        data[data.index.isin(to_keep)].to_csv(outname, index=True)
 
 
 if __name__ == '__main__':
