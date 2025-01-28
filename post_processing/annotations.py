@@ -4,10 +4,10 @@ and generate tables containing the annotation abundances.
 """
 
 import argparse
-import glob
 import logging
 import os
 from collections import namedtuple
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -25,14 +25,15 @@ class AnnotationAbundanceCalculator():
         'KEGG_Module', 'KEGG_Reaction', 'KEGG_rclass', 'BRITE',
         'KEGG_TC', 'CAZy', 'BiGG_Reaction', 'PFAMs']
 
-    def __init__(self, input_dir, output_dir, old_style):
+    def __init__(self, samples_file, input_dir, output_dir, old_style):
         self.input_dir = input_dir
         self.output_dir = output_dir
-        count_dir = "gene_counts"
-        abundance_files = glob.glob(
-            os.path.join(self.input_dir, "*", count_dir, "*_genes_per_cell.csv"))
-        self.samples = [Sample(self.get_sample_name(fname), fname)
-                        for fname in abundance_files]
+        self.sample_names = self.read_samples_file(samples_file)["sample"]
+
+        self.samples = [
+            Sample(sname, Path(self.input_dir, sname, "gene_counts",
+                               f"{sname}_genes_per_cell.csv"))
+            for sname in self.sample_names]
 
     def __call__(self):
         data = self.load_annotations()
@@ -43,6 +44,11 @@ class AnnotationAbundanceCalculator():
         for colname in self.cols_to_transform:
             self.get_annotation_abundances(data, colname).to_csv(
                 os.path.join(self.output_dir, f"{colname}.csv"))
+
+    @staticmethod
+    def read_samples_file(samples_file):
+        data = pd.read_csv(args.samples_file, header=0)
+        return data
 
     def get_annotation_abundances(self, data, colname):
         """
@@ -60,14 +66,6 @@ class AnnotationAbundanceCalculator():
         annotations = annotations.to_frame().merge(
             data[self.sample_names], how="left", left_on="#query", right_index=True)
         return annotations.groupby(colname).sum()
-
-    @staticmethod
-    def get_sample_name(abundance_file):
-        return abundance_file.rsplit("/", 1)[-1].rstrip("_genes_per_cell.csv")
-
-    @property
-    def sample_names(self):
-        return [sample.name for sample in self.samples]
 
     @property
     def annotation_file(self):
@@ -89,6 +87,7 @@ class AnnotationAbundanceCalculator():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("annotations.py")
+    parser.add_argument("samples_file", help="path to samples csv file.")
     parser.add_argument(
         "-i", "--input_dir", default="output",
         help="path to the output directory of the pipeline")
