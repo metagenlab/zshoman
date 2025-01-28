@@ -88,16 +88,16 @@ class AnnotationAbundanceCalculator():
 
 
 if __name__ == '__main__':
-    args = argparse.ArgumentParser("annotations.py")
-    args.add_argument(
-        "input_dir",
+    parser = argparse.ArgumentParser("annotations.py")
+    parser.add_argument(
+        "-i", "--input_dir", default="output",
         help="path to the output directory of the pipeline")
-    args.add_argument(
+    parser.add_argument(
         "-o", "--output_dir",
         help="path where the post-processed tables will be written to. "
              "defaults to post_processed subdirectory in the input_dir")
 
-    args = args.parse_args()
+    args = parser.parse_args()
     output_dir = args.output_dir or os.path.join(args.input_dir, "post_processed")
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
