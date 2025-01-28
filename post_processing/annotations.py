@@ -28,10 +28,7 @@ class AnnotationAbundanceCalculator():
     def __init__(self, input_dir, output_dir, old_style):
         self.input_dir = input_dir
         self.output_dir = output_dir
-        if old_style:
-            count_dir = "gene_counts"
-        else:
-            count_dir = "gene_counts_gc"
+        count_dir = "gene_counts"
         abundance_files = glob.glob(
             os.path.join(self.input_dir, "*", count_dir, "*_genes_per_cell.csv"))
         self.samples = [Sample(self.get_sample_name(fname), fname)
@@ -99,10 +96,6 @@ if __name__ == '__main__':
         "-o", "--output_dir",
         help="path where the post-processed tables will be written to. "
              "defaults to post_processed subdirectory in the input_dir")
-    args.add_argument(
-        "--old_style", action="store_true",
-        help="For old versions of the pipeline where abundances for the gene "
-             "catalog are stored in 'gene_catalog' instead of 'gene_catalog_gc'")
 
     args = args.parse_args()
     output_dir = args.output_dir or os.path.join(args.input_dir, "post_processed")
