@@ -4,6 +4,7 @@ This script will download the KEGG module database and save it as a csv file.
 
 import argparse
 import logging
+from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
@@ -89,3 +90,10 @@ if __name__ == "__main__":
         ],
     )
     df.to_csv(Path(db_dir, "kegg_modules.csv"), index=False)
+
+    res = REST.kegg_link("module", "ko")
+    ko_modules = pd.read_csv(res, sep="\t", names=["ko", "module"])
+    ko_modules["ko"] = ko_modules["ko"].str.replace("ko:", "")
+    ko_modules["module"] = ko_modules["module"].str.replace("md:", "")
+    mapping = defaultdict(list)
+    ko_modules.groupby("ko").agg(list).to_csv(Path(db_dir, "ko_to_modules.csv"))
