@@ -23,6 +23,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
+- Add post-processing script calculate abundances of complete KEGG modules. ([#24](https://github.com/metagenlab/zshoman/pull/24)) (Niklaus Johner)
 - Add script to merge mOTUS outputs into a single table. ([#20](https://github.com/metagenlab/zshoman/pull/20)) (Niklaus Johner)
 - Add script to filter out already processed samples from input. ([#19](https://github.com/metagenlab/zshoman/pull/19)) (Niklaus Johner)
 - Add support for per sample runs in annotations post-processing script. ([#24](https://github.com/metagenlab/zshoman/pull/24)) (Niklaus Johner)
