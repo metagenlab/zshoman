@@ -44,6 +44,8 @@ class InputRemover:
             if sample not in to_keep:
                 files = []
                 for file in data.loc[sample]:
+                    if pd.isna(file):
+                        continue
                     file = file.strip()
                     if not file:
                         continue
