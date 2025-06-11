@@ -1,6 +1,6 @@
 """
-This script will remove the preprocessed metagenomes from the output
-directory for samples for which the pipeline is finished.
+This script will remove the downloaded input files for samples for which
+the pipeline is finished.
 """
 
 import argparse
