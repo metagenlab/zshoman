@@ -86,6 +86,11 @@ if __name__ == "__main__":
         type=Path,
         help="ouput sample file name. Defaults to [samples_file]_downloaded.csv",
     )
+    args.add_argument(
+        "--skip_download",
+        action="store_true",
+        help="ouput sample file name. Defaults to [samples_file]_downloaded.csv",
+    )
 
     args = args.parse_args()
 
@@ -109,5 +114,6 @@ if __name__ == "__main__":
                 ]
                 outfile_handle.write(", ".join(res) + "\n")
 
-    n = int(args.n or 10)
-    FileDownloader(args.samples_file, args.input_dir, args.output_dir)(n)
+    if not args.skip_download:
+        n = int(args.n or 10)
+        FileDownloader(args.samples_file, args.input_dir, args.output_dir)(n)
