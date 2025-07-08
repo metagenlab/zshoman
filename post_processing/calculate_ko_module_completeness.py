@@ -61,9 +61,15 @@ if __name__ == "__main__":
     modules = modules.join(module_data["definition"])
     kos = pd.read_csv(Path(output_dir, "KEGG_ko.csv"), index_col=0)
     kos.index = kos.index.str.replace("ko:", "")
-    for sample in kos:
+    for i, sample in enumerate(kos, 1):
+        if i % 100 == 0:
+            logger.info(f"Done {i}/{len(kos.columns)}")
         kos_present = "|".join(kos.index[kos[sample] > 0])
-
+        if not kos_present:
+            # not a single KO present, which means all modules are already
+            # set to 0 as well
+            modules[sample] = 0
+            continue
         complete_modules = (
             modules["definition"]
             .str.replace(kos_present, "True", regex=True)
