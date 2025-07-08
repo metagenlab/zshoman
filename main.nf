@@ -56,7 +56,7 @@ workflow {
     // We first need to deal with multilane samples.
     // We collect the lanes into lists of files, concatenate them into a single
     // file if there are several files and then recombine the channels.
-    samples = samples.collect({[it[0], it[1..4].findAll(), it[5..8].findAll()]})
+    samples = samples.collect({[it[0], it[1..5].findAll(), it[6..10].findAll()]})
 
     samples = Channel.fromList(samples).branch({
         single_lane: it[1].size()==1 && it[2].size()<=1

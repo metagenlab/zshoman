@@ -37,6 +37,12 @@
         "pattern": "^\\S+\\.f(ast)?q(\\.gz)?$",
         "format": "file-path"
       },
+      "fastq_R1_L5": {
+        "errorMessage": "FastQ file for reads 1, lane 5, cannot contain spaces and must have extension '.fq.gz', '.fastq.gz', '.fq' or '.fastq'",
+        "type": "string",
+        "pattern": "^\\S+\\.f(ast)?q(\\.gz)?$",
+        "format": "file-path"
+      },
       "fastq_R2": {
         "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz', '.fastq.gz', '.fq' or '.fastq'",
         "type": "string",
@@ -56,6 +62,12 @@
       },
       "fastq_R2_L4": {
         "errorMessage": "FastQ file for reads 2, lane 4, cannot contain spaces and must have extension '.fq.gz', '.fastq.gz', '.fq' or '.fastq'",
+        "type": "string",
+        "pattern": "^\\S+\\.f(ast)?q(\\.gz)?$",
+        "format": "file-path"
+      },
+      "fastq_R2_L5": {
+        "errorMessage": "FastQ file for reads 2, lane 5, cannot contain spaces and must have extension '.fq.gz', '.fastq.gz', '.fq' or '.fastq'",
         "type": "string",
         "pattern": "^\\S+\\.f(ast)?q(\\.gz)?$",
         "format": "file-path"
