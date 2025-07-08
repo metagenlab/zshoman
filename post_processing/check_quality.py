@@ -229,17 +229,21 @@ if __name__ == "__main__":
     log_dir = Path(args.input_dir, "logs")
 
     data = defaultdict(dict)
+    skipped_samples = []
     for i, sample in enumerate(samples, 1):
         trim_log = Path(log_dir, f"{sample}_trimmed.bbduk.log")
-        data[sample]["trim_adapters"] = ProcessBBduk(trim_log)()
-
         phix_log = Path(log_dir, f"{sample}_phix_filtered.bbduk.log")
-        data[sample]["filter_phix"] = ProcessBBduk(phix_log)()
-
         qf_log = Path(log_dir, f"{sample}_quality_filtered.bbduk.log")
-        data[sample]["filter_quality"] = ProcessBBduk(qf_log)()
-
         hf_log = Path(log_dir, f"{sample}_host_filtered.bbmap.log")
+
+        if not all([el.exists() for el in [trim_log, phix_log, qf_log, hf_log]]):
+            logger.info(f"Skipping {sample}: Missing preprocessing logs")
+            skipped_samples.append(sample)
+            continue
+
+        data[sample]["trim_adapters"] = ProcessBBduk(trim_log)()
+        data[sample]["filter_phix"] = ProcessBBduk(phix_log)()
+        data[sample]["filter_quality"] = ProcessBBduk(qf_log)()
         data[sample]["filter_host"] = ProcessBBMap(hf_log)()
 
         hf_log = Path(log_dir, f"{sample}_host_filtered_singletons.bbmap.log")
@@ -276,6 +280,7 @@ if __name__ == "__main__":
         "motus",
     ]
     columns = [(log, key) for log in logs for key in data[samples[0]][log].keys()]
+    samples = [el for el in samples if el not in skipped_samples]
     df = pd.DataFrame(
         index=samples,
         columns=[f"{log}-{key}" for log, key in columns],
