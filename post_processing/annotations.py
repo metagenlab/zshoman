@@ -12,33 +12,51 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger("Post-processing")
 
 
-class Sample():
-
+class Sample:
     def __init__(self, name, input_dir):
         self.name = name
         self.input_dir = input_dir
 
+    def has_all_files(self):
+        return self.gene_file.exists() and self.annotation_file.exists()
+
     @property
     def gene_file(self):
-        return Path(self.input_dir, self.name, "gene_counts",
-                    f"{self.name}_genes_per_cell.csv")
+        return Path(
+            self.input_dir, self.name, "gene_counts", f"{self.name}_genes_per_cell.csv"
+        )
 
     @property
     def annotation_file(self):
-        return Path(self.input_dir, self.name, "annotations",
-                    f"{self.name}.emapper.annotations")
+        return Path(
+            self.input_dir, self.name, "annotations", f"{self.name}.emapper.annotations"
+        )
 
 
-class AnnotationAbundanceCalculator():
-
+class AnnotationAbundanceCalculator:
     cols_to_transform = [
-        'COG_category', 'GOs', 'EC', 'KEGG_ko', 'KEGG_Pathway',
-        'KEGG_Module', 'KEGG_Reaction', 'KEGG_rclass', 'BRITE',
-        'KEGG_TC', 'CAZy', 'BiGG_Reaction', 'PFAMs']
+        "COG_category",
+        "GOs",
+        "EC",
+        "KEGG_ko",
+        "KEGG_Pathway",
+        "KEGG_Module",
+        "KEGG_Reaction",
+        "KEGG_rclass",
+        "BRITE",
+        "KEGG_TC",
+        "CAZy",
+        "BiGG_Reaction",
+        "PFAMs",
+    ]
 
     def __init__(self, samples_file, input_dir, output_dir, per_sample):
         self.input_dir = input_dir
@@ -46,36 +64,56 @@ class AnnotationAbundanceCalculator():
         self.per_sample = per_sample
         self.sample_names = self.read_samples_file(samples_file)["sample"]
 
-        self.samples = [
-            Sample(sname, self.input_dir) for sname in self.sample_names]
+        self.samples = [Sample(sname, self.input_dir) for sname in self.sample_names]
+        if per_sample:
+            to_skip = [el for el in self.samples if not el.has_all_files()]
+            to_skip_names = [el.name for el in to_skip]
+            logger.warning(f"Skipping {len(to_skip)} samples missing a file.")
+            logger.warning(to_skip_names)
+            self.samples = [el for el in self.samples if el not in to_skip]
+            self.sample_names = [
+                el for el in self.sample_names if el not in to_skip_names
+            ]
 
     def __call__(self):
         if not self.per_sample:
             annotations = self.load_annotations()
             abundances = reduce(
                 lambda left, right: pd.join(left, right),
-                (self.load_abundances(sample) for sample in self.samples))
+                (self.load_abundances(sample) for sample in self.samples),
+            )
 
             for colname in self.cols_to_transform:
                 self.get_annotation_abundances(annotations, abundances, colname).to_csv(
-                    os.path.join(self.output_dir, f"{colname}.csv"))
+                    os.path.join(self.output_dir, f"{colname}.csv")
+                )
         else:
-            for sample in self.samples:
-                logger.info(f"Loading data for {sample.name}")
+            n_samples = len(self.samples)
+            for i, sample in enumerate(self.samples, 1):
                 annotations = self.load_annotations(sample)
                 abundances = self.load_abundances(sample)
                 for colname in self.cols_to_transform:
-                    setattr(sample, colname, self.get_annotation_abundances(
-                        annotations, abundances, colname))
+                    setattr(
+                        sample,
+                        colname,
+                        self.get_annotation_abundances(
+                            annotations, abundances, colname
+                        ),
+                    )
+                if i % 25 == 0:
+                    logger.info(f"Loaded data for {i} / {n_samples}")
 
             for colname in self.cols_to_transform:
                 annotation_abundances = reduce(
-                    lambda left, right: pd.merge(left, right, left_index=True,
-                                                 right_index=True, how="outer"),
-                    (getattr(sample, colname) for sample in self.samples))
+                    lambda left, right: pd.merge(
+                        left, right, left_index=True, right_index=True, how="outer"
+                    ),
+                    (getattr(sample, colname) for sample in self.samples),
+                )
 
                 annotation_abundances.to_csv(
-                    os.path.join(self.output_dir, f"{colname}.csv"))
+                    os.path.join(self.output_dir, f"{colname}.csv")
+                )
 
     @staticmethod
     def read_samples_file(samples_file):
@@ -96,45 +134,58 @@ class AnnotationAbundanceCalculator():
         col = annotations[colname]
         annotations = col[pd.notna(col)].str.split(",").explode()
         annotations = annotations.to_frame().merge(
-            abundances, how="left", left_on="#query", right_index=True)
+            abundances, how="left", left_on="#query", right_index=True
+        )
         return annotations.groupby(colname).sum()
 
     def annotation_file(self, sample):
         if sample is None:
-            return os.path.join(self.input_dir, "gene_catalog",
-                                "all.emapper.annotations")
+            return os.path.join(
+                self.input_dir, "gene_catalog", "all.emapper.annotations"
+            )
         else:
             return sample.annotation_file
 
     def load_annotations(self, sample=None):
-        data = pd.read_csv(self.annotation_file(sample), header=4,
-                           delimiter="\t", index_col=0)
+        data = pd.read_csv(
+            self.annotation_file(sample), header=4, delimiter="\t", index_col=0
+        )
         data.where(data != "-", np.nan, inplace=True)
         return data
 
     @staticmethod
     def load_abundances(sample):
-        return pd.read_csv(sample.gene_file, delimiter=",", index_col=0,
-                           names=["gene", sample.name])
+        return pd.read_csv(
+            sample.gene_file, delimiter=",", index_col=0, names=["gene", sample.name]
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser("annotations.py")
     parser.add_argument("samples_file", help="path to samples csv file.")
     parser.add_argument(
-        "-i", "--input_dir", default="output",
-        help="path to the output directory of the pipeline")
+        "-i",
+        "--input_dir",
+        default="output",
+        help="path to the output directory of the pipeline",
+    )
     parser.add_argument(
-        "-o", "--output_dir",
+        "-o",
+        "--output_dir",
         help="path where the post-processed tables will be written to. "
-             "defaults to post_processed subdirectory in the input_dir")
+        "defaults to post_processed subdirectory in the input_dir",
+    )
     parser.add_argument(
-        "--per_sample", default=False, action="store_true",
-        help="Whether the pipeline was run per sample or with the gene catalog.")
+        "--per_sample",
+        default=False,
+        action="store_true",
+        help="Whether the pipeline was run per sample or with the gene catalog.",
+    )
     args = parser.parse_args()
     output_dir = args.output_dir or os.path.join(args.input_dir, "post_processed")
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
-    AnnotationAbundanceCalculator(args.samples_file, args.input_dir,
-                                  output_dir, args.per_sample)()
+    AnnotationAbundanceCalculator(
+        args.samples_file, args.input_dir, output_dir, args.per_sample
+    )()
