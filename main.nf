@@ -16,6 +16,7 @@ include { CAT_CAT as CAT_AA } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_NT } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_R1 } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_R2 } from './modules/nf-core/cat/cat/main'
+include { CAT_CAT as CAT_SINGLE_END } from './modules/nf-core/cat/cat/main'
 include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
 include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
@@ -59,29 +60,37 @@ workflow {
 
     samples = Channel.fromList(samples).branch({
         single_lane: it[1].size()==1 && it[2].size()<=1
-        multi_lane: it[1].size()>1 && it[2].size()>1
+        multi_lane_paired: it[1].size()>1 && it[2].size()>1
+        multi_lane_single: it[1].size()>1 && it[2].size()==0
         other: true
         })
 
     samples.other.count().map({
         if (it > 0) {
-            error "We do not support multiple lanes for single end samples."
+            error "We do not support samples with a single forward but multiple backward read files."
         }
     })
 
-    r1_multi = samples.multi_lane.map({
+    r1_multi = samples.multi_lane_paired.map({
             [it[0], it[1]]
         })
-    r2_multi = samples.multi_lane.map({
+    r2_multi = samples.multi_lane_paired.map({
             [it[0], it[2]]
         })
 
     r1_multi = CAT_R1(r1_multi).file_out
     r2_multi = CAT_R2(r2_multi).file_out
 
+    single_end_multi = samples.multi_lane_single.map({
+            [it[0], it[1]]
+        })
+    single_end_multi = CAT_SINGLE_END(single_end_multi).file_out
+
     samples = samples.single_lane.map({
             [it[0], it[1][0], it[2][0]]
-        }).mix(r1_multi.join(r2_multi))
+        }).mix(r1_multi.join(r2_multi)).mix(single_end_multi.map({
+            [it[0], it[1], it[2]]
+        }))
 
     // Update the metadata with the single_end parameter and put reads files in a list
     samples = samples.map( {
