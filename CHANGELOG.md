@@ -23,6 +23,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
+- Add script to copy input files from a source to the input folder. ([#30](https://github.com/metagenlab/zshoman/pull/30)) (Niklaus Johner)
 - Add support for 5 lanes or experiments for a given sample. ([#29](https://github.com/metagenlab/zshoman/pull/29)) (Niklaus Johner)
 - Add support for samples with multiple single-end experiments. ([#28](https://github.com/metagenlab/zshoman/pull/28)) (Niklaus Johner)
 - Add post-processing script calculate abundances of complete KEGG modules. ([#24](https://github.com/metagenlab/zshoman/pull/24)) (Niklaus Johner)
