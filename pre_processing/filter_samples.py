@@ -1,11 +1,13 @@
 """
 This script will filter out samples for which all the outputs
-are present from an input file.
+are present from an input file and optionally for which the input
+file has not been downloaded yet.
 """
 
 import argparse
 import logging
 import sys
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -15,9 +17,10 @@ logger = logging.getLogger("filter-samples")
 
 
 class SamplesCleaner:
-    def __init__(self, samples_file, output_dir, ignore_preprocessing):
+    def __init__(self, samples_file, output_dir, ignore_preprocessing, only_downloaded):
         self.sample_file = Path(samples_file)
         self.output_dir = Path(output_dir)
+        self.only_downloaded = only_downloaded
         self.expected_subdirs = [
             "annotations",
             "assembly",
@@ -44,6 +47,26 @@ class SamplesCleaner:
                     logger.info(f"{sample}: missing {subdir}")
                     break
 
+        if self.only_downloaded:
+            for sample, files in data.iterrows():
+                if sample not in to_keep:
+                    continue
+                remove = False
+                for file in files:
+                    file = file.strip()
+                    if not file:
+                        continue
+                    file = Path(file)
+                    if not file.exists():
+                        remove = True
+                        break
+                    if (time.time() - file.stat().st_mtime) < 600:
+                        remove = True
+                        break
+                if remove:
+                    print(f"Removing {sample} as it is not finished downloading")
+                    to_keep.remove(sample)
+
         logger.info(f"Keeping {len(to_keep)} samples")
         outname = Path(
             self.sample_file.parent,
@@ -69,8 +92,18 @@ if __name__ == "__main__":
     args.add_argument(
         "--ignore_preprocessing",
         action="store_true",
-        help="remove input even if preprocessed_reads folder is missing",
+        help="filter out sample even if preprocessed_reads folder is missing",
+    )
+    args.add_argument(
+        "--only_downloaded",
+        action="store_true",
+        help="filter out sample if input files have not been downloaded yet",
     )
 
     args = args.parse_args()
-    SamplesCleaner(args.samples_file, args.output_dir, args.ignore_preprocessing)()
+    SamplesCleaner(
+        args.samples_file,
+        args.output_dir,
+        args.ignore_preprocessing,
+        args.only_downloaded,
+    )()

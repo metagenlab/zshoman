@@ -1,6 +1,6 @@
 """
-This script will remove the preprocessed metagenomes from the output
-directory for samples for which the pipeline is finished.
+This script will remove the downloaded input files for samples for which
+the pipeline is finished.
 """
 
 import argparse
@@ -19,6 +19,7 @@ class InputRemover:
         self.output_dir = Path(output_dir)
         self.dry_run = dry_run
         self.expected_subdirs = [
+            ".",
             "annotations",
             "assembly",
             "gene_counts",
@@ -36,22 +37,25 @@ class InputRemover:
         to_keep = []
         to_delete = {}
         for sample in samples:
+            files = []
+            for file in data.loc[sample]:
+                if pd.isna(file):
+                    continue
+                file = file.strip()
+                if not file:
+                    continue
+                file = Path(file.strip())
+                if file.is_file():
+                    files.append(file)
+            if not files:
+                continue
             for subdir in self.expected_subdirs:
                 if not Path(self.output_dir, sample, subdir).exists():
                     to_keep.append(sample)
                     logger.info(f"{sample}: missing {subdir}")
                     break
             if sample not in to_keep:
-                files = []
-                for file in data.loc[sample]:
-                    file = file.strip()
-                    if not file:
-                        continue
-                    file = Path(file.strip())
-                    if file.is_file():
-                        files.append(file)
-                if files:
-                    to_delete[sample] = files
+                to_delete[sample] = files
         logger.info(f"Keeping {len(to_keep)} samples")
         logger.warning(f"Deleting files for {len(to_delete)} samples")
 
