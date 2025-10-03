@@ -322,7 +322,7 @@ workflow {
             
             if (params.custom_annotation_db) {
                 custom_annotation_db = BLAST_MAKEBLASTDB(({"id": "custom_annotation"}, Channel.FromPath(params.custom_annotation_db))).db
-                BLAST_BLASTP(aa_tuples, custom_annotation_db, "csv")
+                BLAST_BLASTP(aa_tuples, custom_annotation_db)
             }
             // Avoid redoing the annotations if it was already done
             aa_tuples = aa_tuples.filter({

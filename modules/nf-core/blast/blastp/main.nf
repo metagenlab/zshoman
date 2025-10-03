@@ -10,7 +10,6 @@ process BLAST_BLASTP {
     input:
     tuple val(meta) , path(fasta)
     tuple val(meta2), path(db)
-    val out_ext
 
     output:
     tuple val(meta), path("*.xml"), optional: true, emit: xml
@@ -26,17 +25,6 @@ process BLAST_BLASTP {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def is_compressed = fasta.getExtension() == "gz" ? true : false
     def fasta_name = is_compressed ? fasta.getBaseName() : fasta
-    switch ( out_ext ) {
-        case "xml": outfmt = 5; break
-        case "tsv": outfmt = 6; break
-        case "csv": outfmt = 10; break
-        default:
-            outfmt = '6';
-            out_ext = 'tsv';
-            log.warn("Unknown output file format provided (${out_ext}): selecting BLAST default of tabular BLAST output (tsv)");
-            break
-    }
-
     """
     if [ "${is_compressed}" == "true" ]; then
         gzip -c -d ${fasta} > ${fasta_name}
@@ -45,10 +33,10 @@ process BLAST_BLASTP {
     DB=`find -L ./ -name "*.phr" | sed 's/\\.phr\$//'`
     blastp \\
         -query ${fasta_name} \\
-        -out ${prefix}.${out_ext} \\
+        -out ${prefix}.tsv \\
         -db \$DB \\
         -num_threads ${task.cpus} \\
-        -outfmt ${outfmt} \\
+        -outfmt "6 qaccver saccver pident length evalue bitscore qcovs" \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml
@@ -60,19 +48,9 @@ process BLAST_BLASTP {
     stub:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    switch ( out_ext ) {
-        case "xml": outfmt = 5; break
-        case "tsv": outfmt = 6; break
-        case "csv": outfmt = 10; break
-        default:
-            outfmt = '6';
-            out_ext = 'tsv';
-            log.warn("Unknown output file format provided (${out_ext}): selecting BLAST default of tabular BLAST output (tsv)");
-            break
-    }
 
     """
-    touch ${prefix}.${out_ext}
+    touch ${prefix}.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
