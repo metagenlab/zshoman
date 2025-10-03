@@ -8,6 +8,8 @@ include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING } from './modules/nf-core/bbmap
 include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbmerge/main'
 include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
+include { BLAST_BLASTP } from './modules/nf-core/blast/blastp/main'
+include { BLAST_MAKEBLASTDB } from './modules/nf-core/blast/makeblastdb/main'
 include { BWA_INDEX as BWA_INDEX_GC } from './modules/nf-core/bwa/index/main'
 include { BWA_INDEX as BWA_INDEX_SAMPLES } from './modules/nf-core/bwa/index/main'
 include { BWA_MEM as BWA_MEM_GC } from './modules/nf-core/bwa/mem/main'
@@ -317,6 +319,11 @@ workflow {
 
             // We first gather the prokaryotic genes and eukaryotic genes together
             aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple(size: 2, remainder: true)
+            
+            if (params.custom_annotation_db) {
+                custom_annotation_db = BLAST_MAKEBLASTDB(({"id": "custom_annotation"}, Channel.FromPath(params.custom_annotation_db))).db
+                BLAST_BLASTP(aa_tuples, custom_annotation_db, "csv")
+            }
             // Avoid redoing the annotations if it was already done
             aa_tuples = aa_tuples.filter({
                 (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
