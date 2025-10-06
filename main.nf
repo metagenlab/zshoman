@@ -8,6 +8,7 @@ include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING } from './modules/nf-core/bbmap
 include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbmerge/main'
 include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
+include { BLAST_BEST_HITS } from './modules/local/blast_best_hits/main'
 include { BLAST_BLASTP } from './modules/nf-core/blast/blastp/main'
 include { BLAST_MAKEBLASTDB } from './modules/nf-core/blast/makeblastdb/main'
 include { BWA_INDEX as BWA_INDEX_GC } from './modules/nf-core/bwa/index/main'
@@ -215,7 +216,8 @@ workflow {
             preprocessed_samples = preprocessed_samples.filter({
                 (!params.resume_from_output) ||
                 Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
-                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts")) ||
+                (params.custom_annotation_db && Files.notExists(Paths.get(outdir_abs, it[0].id, "custom_annotations")))
                 })
         }
 
@@ -328,7 +330,9 @@ workflow {
                     })
                 annot_db = BLAST_MAKEBLASTDB(new Tuple( [id: 'custom_annotations'], params.custom_annotation_db )).db
                 hits = BLAST_BLASTP(amino_acids_blast, annot_db).tsv
+                best_hits = BLAST_BEST_HITS(hits)
             }
+
             // Avoid redoing the annotations if it was already done
             amino_acids_eggnog = amino_acids.filter({
                 (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))

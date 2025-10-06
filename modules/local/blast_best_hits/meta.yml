@@ -1,0 +1,45 @@
+name: blast_best_hits
+description: Retain best hits from blast results.
+keywords:
+  - filtering
+  - blast
+tools:
+  - custom:
+      description: Custom module to filter out short contigs from scaffolds.
+      tool_dev_url: https://github.com/metagenlab/scripts/tree/main/CIDB/motus_pipeline/modules/local/blast_best_hits/main.nf
+      licence: [""]
+      identifier: "blast_best_hits"
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. [ id:'test', single_end:false ]
+    - hits:
+        type: path
+        description: blast hits tsv file.
+output:
+  - best_hits:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - best_hits:
+          type: file
+          description: filtered hits
+          pattern: "best_hits.tsv"
+  - log:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - "*.log":
+          type: file
+          description: best hit filtering log file
+          pattern: "*.best_hits.log"
+authors:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
+maintainers:
+  - "Niklaus Johner (niklaus.johner@chuv.ch)"
