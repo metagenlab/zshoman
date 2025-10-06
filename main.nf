@@ -319,17 +319,21 @@ workflow {
 
             // We first gather the prokaryotic genes and eukaryotic genes together
             aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple(size: 2, remainder: true)
-            
+            amino_acids = CAT_AA(aa_tuples).file_out
+
             if (params.custom_annotation_db) {
-                custom_annotation_db = BLAST_MAKEBLASTDB(({"id": "custom_annotation"}, Channel.FromPath(params.custom_annotation_db))).db
-                BLAST_BLASTP(aa_tuples, custom_annotation_db)
+                // Avoid redoing the annotations if it was already done
+                amino_acids_blast = amino_acids.filter({
+                    (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "custom_annotations"))
+                    })
+                annot_db = BLAST_MAKEBLASTDB(new Tuple( [id: 'custom_annotations'], params.custom_annotation_db )).db
+                hits = BLAST_BLASTP(amino_acids_blast, annot_db).tsv
             }
             // Avoid redoing the annotations if it was already done
-            aa_tuples = aa_tuples.filter({
+            amino_acids_eggnog = amino_acids.filter({
                 (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
                 })
-            amino_acids = CAT_AA(aa_tuples).file_out
-            EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+            EGGNOGMAPPER_SAMPLES(amino_acids_eggnog, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
         }
     }
 }
