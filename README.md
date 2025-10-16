@@ -35,7 +35,7 @@ Input is a csv file with 2 or 3 columns:
 - fastq_1: path to forward reads
 - fastq_2: optional. path to reverse reads
 
-For single-end samples, the `fastq_2` can be omitted or left empty. The first row should contain the column headers (`sample`, `fastq_1`, `fastq_2`). See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) for an example.
+For single-end samples, the `fastq_2` can be omitted or left empty. The first row should contain the column headers (`sample`, `fastq_R1`, `fastq_R2`). See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) or  [multilane input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template_multilane.csv) for an example.
 
 ### Databases
 
