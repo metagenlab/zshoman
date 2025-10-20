@@ -35,7 +35,7 @@ Input is a csv file with 2 or 3 columns:
 - fastq_1: path to forward reads
 - fastq_2: optional. path to reverse reads
 
-For single-end samples, the `fastq_2` can be omitted or left empty. The first row should contain the column headers (`sample`, `fastq_1`, `fastq_2`). See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) for an example.
+For single-end samples, the `fastq_2` can be omitted or left empty. The first row should contain the column headers (`sample`, `fastq_R1`, `fastq_R2`). See the [input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template.csv) or  [multilane input template](https://github.com/metagenlab/zshoman/blob/main/assets/input_template_multilane.csv) for an example.
 
 ### Databases
 
@@ -56,13 +56,23 @@ If need be, you can also override the path to each database separately (see [nex
 The pipeline has two main branches, either making a gene catalog and doing functional annotation for that catalog, or making the functional annotation independently for each sample. The former makes comparison of genes between samples easier, but requires rerunning a large portion of the pipeline if a new sample needs to be added. These branches can be skipped with `--skip_gene_catalog` and `--skip_per_sample`. Other parts of the pipeline can also be skipped (see [nextflow.config](https://github.com/metagenlab/zshoman/blob/main/nextflow.config) for more details).
 
 
+### Managing disk space usage and resuming the pipeline from output files
+
+Disk space usage when running the pipeline can quickly become problematic because of accumulation of files in the `work` directory. One of the nextflow core developers has developed an experimental plug-in allowing to delete files during the pipeline execution (https://github.com/bentsherman/nf-boost). There are currently two issues with that plug-in:
+
+- It breaks the `-resume` option, meaning that after a crash, the whole pipeline has to be run again.
+- It is buggy and sometimes removes files that are still required for the run, leading to random crashes in the pipeline. There is already [an issue for this](https://github.com/bentsherman/nf-boost/issues/4)
+
+We nevertheless use this plugin by default to limit disk space usage. To minimize the issue with the broken `-resume`, we have included in the pipeline ways to skip entire blocks of the pipeline if they were already run (final output files stored in the `output` directory) and allow restarting other blocks of the pipeline by loading the necessary files from the `output` folder. This is done automatically when using the `--resume_from_output` flag, allowing to skip the most time consuming steps of the pipeline when resuming.
+
+
 ## Running the pipeline on obelix
 
 To run the pipeline on obelix:
 
 - start a `screen` or `tmux`, depending on your religion
 - activate nextflow environment `conda activate nextflow`
-- run the pipeline `nextflow run /mnt/slow_storage/metagenlab/zshoman_dev/main.nf --input samples_test.csv --db_dir  /mnt/slow_storage/databases/ -resume -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config`
+- run the pipeline `nextflow run /mnt/slow_storage/metagenlab/zshoman_dev/main.nf --input samples_test.csv --db_dir  /mnt/fast_storage/databases/ -resume -c /mnt/slow_storage/metagenlab/configs/conf/metagenlab.config`
 
 
 ## Creating the MicroEuk90 database
@@ -90,6 +100,9 @@ Here a quick overview of available scripts:
   - `filter_samples.py`: This script will remove samples for which the analysis is complete from the input file. Can be useful if the pipeline needs to be resumed but nextflow's resume is not available (e.g. because the nf-boost plugin is used to delete intermediary data from the `work` directory)
 - post-processing:
   - `annotations.py`: This script will process the output from eggnog and the gene abundances and generate tables containing the annotation abundances.
+  - `download_kegg_db.py`: downloads the most recent KEGG module definitions
+  - `correct_module_abundances.py`: The current eggnog database uses an older version of the KEGG database, which includes modules that do not exist anymore. This script will recalculate the module abundance table from the KO abundance table produced by the `annotations.py` script using the newest module definitions downloaded using the `download_kegg_db.py` script.
+  - `calculate_ko_module_completeness.py`: This script will calculate the abundance of complete KEGG modules from the corrected module abundance and kegg DB obtained with the two previous scripts.
   - `check_quality.py`: This script will extract information from the log files and prepare summary tables and plots, notably to check the quality of the data and the run.
   - `collect_output.py`: This script will gather output files from the nextflow output directory, copy (and rename them if necessary) to a different location.
   - `merge_output.py`: This script will gather the outputs (for now mOTUs) for all samples from the nextflow output directory, and merge them into a single table.
