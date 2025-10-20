@@ -90,6 +90,9 @@ Here a quick overview of available scripts:
   - `filter_samples.py`: This script will remove samples for which the analysis is complete from the input file. Can be useful if the pipeline needs to be resumed but nextflow's resume is not available (e.g. because the nf-boost plugin is used to delete intermediary data from the `work` directory)
 - post-processing:
   - `annotations.py`: This script will process the output from eggnog and the gene abundances and generate tables containing the annotation abundances.
+  - `download_kegg_db.py`: downloads the most recent KEGG module definitions
+  - `correct_module_abundances.py`: The current eggnog database uses an older version of the KEGG database, which includes modules that do not exist anymore. This script will recalculate the module abundance table from the KO abundance table produced by the `annotations.py` script using the newest module definitions downloaded using the `download_kegg_db.py` script.
+  - `calculate_ko_module_completeness.py`: This script will calculate the abundance of complete KEGG modules from the corrected module abundance and kegg DB obtained with the two previous scripts.
   - `check_quality.py`: This script will extract information from the log files and prepare summary tables and plots, notably to check the quality of the data and the run.
   - `collect_output.py`: This script will gather output files from the nextflow output directory, copy (and rename them if necessary) to a different location.
   - `merge_output.py`: This script will gather the outputs (for now mOTUs) for all samples from the nextflow output directory, and merge them into a single table.
