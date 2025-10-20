@@ -56,6 +56,16 @@ If need be, you can also override the path to each database separately (see [nex
 The pipeline has two main branches, either making a gene catalog and doing functional annotation for that catalog, or making the functional annotation independently for each sample. The former makes comparison of genes between samples easier, but requires rerunning a large portion of the pipeline if a new sample needs to be added. These branches can be skipped with `--skip_gene_catalog` and `--skip_per_sample`. Other parts of the pipeline can also be skipped (see [nextflow.config](https://github.com/metagenlab/zshoman/blob/main/nextflow.config) for more details).
 
 
+### Managing disk space usage and resuming the pipeline from output files
+
+Disk space usage when running the pipeline can quickly become problematic because of accumulation of files in the `work` directory. One of the nextflow core developers has developed an experimental plug-in allowing to delete files during the pipeline execution (https://github.com/bentsherman/nf-boost). There are currently two issues with that plug-in:
+
+- It breaks the `-resume` option, meaning that after a crash, the whole pipeline has to be run again.
+- It is buggy and sometimes removes files that are still required for the run, leading to random crashes in the pipeline. There is already [an issue for this](https://github.com/bentsherman/nf-boost/issues/4)
+
+We nevertheless use this plugin by default to limit disk space usage. To minimize the issue with the broken `-resume`, we have included in the pipeline ways to skip entire blocks of the pipeline if they were already run (final output files stored in the `output` directory) and allow restarting other blocks of the pipeline by loading the necessary files from the `output` folder. This is done automatically when using the `--resume_from_output` flag, allowing to skip the most time consuming steps of the pipeline when resuming.
+
+
 ## Running the pipeline on obelix
 
 To run the pipeline on obelix:
