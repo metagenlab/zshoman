@@ -10,6 +10,8 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Changed
 
+- Set threshold for per sample gene profiling to 99% identity instead of 95% ([#37](https://github.com/metagenlab/zshoman/pull/37)) (Niklaus Johner)
+
 ### Added
 
 ## 1.0.0 - 2025-12-12
