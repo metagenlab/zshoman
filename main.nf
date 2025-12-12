@@ -8,6 +8,9 @@ include { BBMAP_BBDUK as BBDUK_QUALITY_FILTERING } from './modules/nf-core/bbmap
 include { BBMAP_BBDUK as BBDUK_TRIM_ADAPTERS } from './modules/nf-core/bbmap/bbduk/main'
 include { BBMAP_BBMERGE as BBMAP_MERGE_PAIRS } from './modules/nf-core/bbmap/bbmerge/main'
 include { BBMAP_INDEX as BBMAP_INDEX_HOST } from './modules/nf-core/bbmap/index/main'
+include { BLAST_BEST_HITS } from './modules/local/blast_best_hits/main'
+include { BLAST_BLASTP } from './modules/nf-core/blast/blastp/main'
+include { BLAST_MAKEBLASTDB } from './modules/nf-core/blast/makeblastdb/main'
 include { BWA_INDEX as BWA_INDEX_GC } from './modules/nf-core/bwa/index/main'
 include { BWA_INDEX as BWA_INDEX_SAMPLES } from './modules/nf-core/bwa/index/main'
 include { BWA_MEM as BWA_MEM_GC } from './modules/nf-core/bwa/mem/main'
@@ -213,7 +216,8 @@ workflow {
             preprocessed_samples = preprocessed_samples.filter({
                 (!params.resume_from_output) ||
                 Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
-                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
+                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts")) ||
+                (params.custom_annotation_db && Files.notExists(Paths.get(outdir_abs, it[0].id, "custom_annotations")))
                 })
         }
 
@@ -317,12 +321,23 @@ workflow {
 
             // We first gather the prokaryotic genes and eukaryotic genes together
             aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple(size: 2, remainder: true)
+            amino_acids = CAT_AA(aa_tuples).file_out
+
+            if (params.custom_annotation_db) {
+                // Avoid redoing the annotations if it was already done
+                amino_acids_blast = amino_acids.filter({
+                    (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "custom_annotations"))
+                    })
+                annot_db = BLAST_MAKEBLASTDB(new Tuple( [id: 'custom_annotations'], params.custom_annotation_db )).db
+                hits = BLAST_BLASTP(amino_acids_blast, annot_db).tsv
+                best_hits = BLAST_BEST_HITS(hits)
+            }
+
             // Avoid redoing the annotations if it was already done
-            aa_tuples = aa_tuples.filter({
+            amino_acids_eggnog = amino_acids.filter({
                 (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
                 })
-            amino_acids = CAT_AA(aa_tuples).file_out
-            EGGNOGMAPPER_SAMPLES(amino_acids, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
+            EGGNOGMAPPER_SAMPLES(amino_acids_eggnog, params.eggnog_db, params.eggnog_dbdir, new Tuple([:], params.eggnog_dmnd))
         }
     }
 }
