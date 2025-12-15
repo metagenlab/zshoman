@@ -1,0 +1,14 @@
+Changes in module 'nf-core/mmseqs/easycluster'
+--- modules/nf-core/mmseqs/easycluster/main.nf
++++ modules/nf-core/mmseqs/easycluster/main.nf
+@@ -24,7 +24,7 @@
+     def prefix = task.ext.prefix ?: "${meta.id}"
+     """
+     mmseqs \\
+-        easy-cluster \\
++        easy-linclust \\
+         ${sequence} \\
+         ${prefix} \\
+         tmp1 \\
+
+************************************************************

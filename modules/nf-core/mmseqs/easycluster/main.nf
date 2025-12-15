@@ -24,7 +24,7 @@ process MMSEQS_EASYCLUSTER {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     mmseqs \\
-        easy-cluster \\
+        easy-linclust \\
         ${sequence} \\
         ${prefix} \\
         tmp1 \\
