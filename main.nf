@@ -18,7 +18,7 @@ include { CAT_CAT as CAT_R1 } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_R2 } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_SINGLE_END } from './modules/nf-core/cat/cat/main'
 include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
-include { CDHIT_CDHITEST } from './modules/nf-core/cdhit/cdhitest/main'
+include { MMSEQS_EASYCLUSTER as MMSEQS_EASYLINCLUST } from './modules/nf-core/mmseqs/easycluster/main'
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_GC } from './modules/nf-core/eggnogmapper/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_SAMPLES } from './modules/nf-core/eggnogmapper/main'
@@ -273,7 +273,7 @@ workflow {
                             .collectFile( {row ->  [ "genes.fna.gz", row[1] ]} )
                             .map( { new Tuple([id: 'all'], it )} )
 
-            gene_catalog_nt = CDHIT_CDHITEST(all_nucleotides).fasta
+            gene_catalog_nt = MMSEQS_EASYLINCLUST(all_nucleotides).representatives
 
             headers = GET_HEADERS(gene_catalog_nt).headers
             gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map( { it[1] } ).first()).sequences
