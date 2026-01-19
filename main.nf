@@ -18,6 +18,7 @@ include { CAT_CAT as CAT_R1 } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_R2 } from './modules/nf-core/cat/cat/main'
 include { CAT_CAT as CAT_SINGLE_END } from './modules/nf-core/cat/cat/main'
 include { CAT_FASTQ } from './modules/nf-core/cat/fastq/main'
+include { CAT_FASTQ as FORCE_SINGLE_FASTQ } from './modules/nf-core/cat/fastq/main'
 include { MMSEQS_EASYCLUSTER as MMSEQS_EASYLINCLUST } from './modules/nf-core/mmseqs/easycluster/main'
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_GC } from './modules/nf-core/eggnogmapper/main'
@@ -51,68 +52,60 @@ log.info paramsSummaryLog(workflow)
 workflow {
     outdir_abs = Paths.get(params.outdir).toAbsolutePath().toString()
     // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
-    samples = samplesheetToList(params.input, "assets/schema_input.json")
+    samples_list = samplesheetToList(params.input, "assets/schema_input.json")
+    // Collect all forward and reverse reads per sample 
+    samples = Channel.fromList(samples_list).map { 
+            it -> [it[0].id, it[1], it[2]] 
+        }.groupTuple()
+        .map { id, r1, r2 ->
+        // Check if single-end or paired-end
+        def is_single = !r2 || r2.flatten().isEmpty()
+        
+        // check if R1 and R2 has more than 1 file. 
+        def is_multi  = r1.size() > 1
 
-    // We first need to deal with multilane samples.
-    // We collect the lanes into lists of files, concatenate them into a single
-    // file if there are several files and then recombine the channels.
-    samples = samples.collect({[it[0], it[1..5].findAll(), it[6..10].findAll()]})
+        def meta = [
+            id:         id, 
+            single_end: is_single, 
+            multi_lane: is_multi
+        ]
 
-    samples = Channel.fromList(samples).branch({
-        single_lane: it[1].size()==1 && it[2].size()<=1
-        multi_lane_paired: it[1].size()>1 && it[2].size()>1
-        multi_lane_single: it[1].size()>1 && it[2].size()==0
-        other: true
-        })
+        // Return tuple of metadata and list of reads
+        return [ meta, [r1.flatten(), r2.flatten()] ]
+    }
 
-    samples.other.count().map({
-        if (it > 0) {
-            error "We do not support samples with a single forward but multiple backward read files."
+    ///////////////////
+    // PRE-PROCESSING //
+    ///////////////////
+    
+    //Split reads int multi and single lane channels
+    lane_ch = samples.branch {meta, reads ->
+        multi: meta.multi_lane == true
+        single: meta.multi_lane == false
+    }
+    
+    //Ensure to have a list with r1 followed by r2 for each sample
+    multi_ch = lane_ch.multi.map{
+        meta, reads -> [meta, [reads[0], reads[1]].transpose().flatten()]
         }
-    })
 
-    r1_multi = samples.multi_lane_paired.map({
-            [it[0], it[1]]
-        })
-    r2_multi = samples.multi_lane_paired.map({
-            [it[0], it[2]]
-        })
+    //Flatten reads list for single-lane samples
+    single_ch = lane_ch.single.map{
+        meta, reads -> [meta, reads.flatten()]
+        }
 
-    r1_multi = CAT_R1(r1_multi).file_out
-    r2_multi = CAT_R2(r2_multi).file_out
-
-    single_end_multi = samples.multi_lane_single.map({
-            [it[0], it[1]]
-        })
-    single_end_multi = CAT_SINGLE_END(single_end_multi).file_out
-
-    samples = samples.single_lane.map({
-            [it[0], it[1][0], it[2][0]]
-        }).mix(r1_multi.join(r2_multi)).mix(single_end_multi.map({
-            [it[0], it[1], it[2]]
-        }))
-
-    // Update the metadata with the single_end parameter and put reads files in a list
-    samples = samples.map( {
-        row ->
-            if (!row[2]) {
-                return new Tuple (row[0] + [ single_end:true ], [ row[1] ])
-            } else {
-                return new Tuple (row[0] + [ single_end:false ], [ row[1], row[2] ])
-            }
-        })
-
-    ///////////////////
-    // PREPROCESSING //
-    ///////////////////
-
+    // Concat multi lane samples (if any)
+    cat_ch = CAT_FASTQ(multi_ch, false).reads.mix(single_ch)
+    
     // We will skip preprocessing for samples which already have the preprocessed
     // folder in the ouput
-    samples = samples.branch({
-        already_preprocessed: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
-        to_preprocess: true
-        })
-
+    samples = cat_ch.branch {
+        already_preprocessed: 
+            params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
+        to_preprocess: 
+            true
+        }
+    
     trimmed_reads = BBDUK_TRIM_ADAPTERS(samples.to_preprocess, params.adapters, false).reads
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.phix, false).reads
     qf_reads = BBDUK_QUALITY_FILTERING(phix_filtered_reads, [], true).reads
@@ -170,7 +163,7 @@ workflow {
     }))
 
     // Make sure we have a single fastq file for all reads per sample
-    reads = CAT_FASTQ(preprocessed_samples, true).reads
+    reads = FORCE_SINGLE_FASTQ(preprocessed_samples, true).reads
 
     /////////////////////////
     // Taxonomic Profiling //
