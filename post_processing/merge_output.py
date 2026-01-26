@@ -35,14 +35,22 @@ class TableMerger:
             self.output_dir, f"{self.out_prefix}_{self.out_name}.{self.out_ext}"
         )
 
+    def filter_samples(self):
+        samples = [
+            sample for sample in self.samples if self.get_table_path(sample).exists()
+        ]
+        logger.info(f"Keeping {len(samples)} / {len(self.samples)} samples.")
+        return samples
+
     def __call__(self, cleanup=True):
+        samples = self.filter_samples()
         merged_table = reduce(
             lambda left, right: pd.merge(left, right, how="outer"),
-            (self.load_table(sample) for sample in self.samples),
+            (self.load_table(sample) for sample in samples),
         )
 
         if cleanup:
-            merged_total = merged_table.loc[:, self.samples].sum(axis=1)
+            merged_total = merged_table.loc[:, samples].sum(axis=1)
             non_zero = merged_total != 0
             merged_table = merged_table[non_zero]
 
@@ -52,30 +60,35 @@ class TableMerger:
 class MotusMerger(TableMerger):
     out_name = "motus"
 
+    def get_table_path(self, sample):
+        return Path(self.input_dir, sample, "motus", sample + ".motus")
+
     def load_table(self, sample):
-        return pd.read_csv(
-            Path(self.input_dir, sample, "motus", sample + ".motus"), sep="\t", header=2
-        )
+        return pd.read_csv(self.get_table_path(sample), sep="\t", header=2)
 
 
 class PhantaMerger(TableMerger):
     def __call__(self, table_name, cleanup=True):
         self.table_name = table_name
         super(PhantaMerger, self).__call__(cleanup)
+        self.table_name = None
 
     @property
     def out_name(self):
         return f"phanta_{self.table_name}"
 
+    def get_table_path(self, sample):
+        return Path(
+            self.input_dir,
+            sample,
+            "phanta",
+            "final_merged_outputs",
+            f"{self.table_name}.txt",
+        )
+
     def load_table(self, sample):
         return pd.read_csv(
-            Path(
-                self.input_dir,
-                sample,
-                "phanta",
-                "final_merged_outputs",
-                f"{self.table_name}.txt",
-            ),
+            self.get_table_path(sample),
             sep="\t",
             header=0,
         ).rename(columns={f"{sample}_": sample})
