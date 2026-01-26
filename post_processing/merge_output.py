@@ -17,7 +17,7 @@ logger = logging.getLogger("Post-processing")
 
 class TableMerger:
     to_exclude = ["gene_catalog", "pipeline_info", "logs"]
-    out_ext = "tsv"
+    out_ext = "csv"
 
     def __init__(self, samples_file, input_dir, output_dir, prefix):
         self.input_dir = Path(input_dir)
