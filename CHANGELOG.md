@@ -16,6 +16,8 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
+- Add support for phanta tables in post-processing script to merge outputs. ([#41](https://github.com/metagenlab/zshoman/pull/41)) (Niklaus Johner)
+
 ## 1.0.0 - 2025-12-12
 
 ### Fixed
