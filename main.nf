@@ -75,12 +75,19 @@ workflow {
         return [ meta, [r1, r2] ]
     }
 
+    samples = samples.branch {
+        already_preprocessed: 
+            params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
+        to_preprocess: 
+            true
+        }
+
     ///////////////////
     // PRE-PROCESSING //
     ///////////////////
     
     //Split reads int multi and single lane channels
-    lane_ch = samples.branch {meta, reads ->
+    lane_ch = samples.to_preprocess.branch {meta, reads ->
         multi: meta.multi_lane == true
         single: meta.multi_lane == false
     }
@@ -100,14 +107,8 @@ workflow {
     
     // We will skip preprocessing for samples which already have the preprocessed
     // folder in the ouput
-    samples = cat_ch.branch {
-        already_preprocessed: 
-            params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
-        to_preprocess: 
-            true
-        }
     
-    trimmed_reads = BBDUK_TRIM_ADAPTERS(samples.to_preprocess, params.adapters, false).reads
+    trimmed_reads = BBDUK_TRIM_ADAPTERS(cat_ch, params.adapters, false).reads
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.phix, false).reads
     qf_reads = BBDUK_QUALITY_FILTERING(phix_filtered_reads, [], true).reads
     qf_singletons = BBDUK_QUALITY_FILTERING.out.singletons.map({ new Tuple (it[0] + [single_end:true], it[1]) })
