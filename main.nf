@@ -53,6 +53,7 @@ workflow {
     outdir_abs = Paths.get(params.outdir).toAbsolutePath().toString()
     // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
     samples_list = samplesheetToList(params.input, "assets/schema_input.json")
+
     // Collect all forward and reverse reads per sample 
     samples = Channel.fromList(samples_list).map { 
             it -> [it[0].id, it[1], it[2]] 
@@ -71,7 +72,7 @@ workflow {
         ]
 
         // Return tuple of metadata and list of reads
-        return [ meta, [r1.flatten(), r2.flatten()] ]
+        return [ meta, [r1, r2] ]
     }
 
     ///////////////////
