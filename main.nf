@@ -94,12 +94,12 @@ workflow {
     }
     
     // Concat multi lane samples (if any)
-    cat_ch = CAT_FASTQ(to_preprocess.multi, false).reads.mix(to_preprocess.single)
+    concatenated = CAT_FASTQ(to_preprocess.multi, false).reads.mix(to_preprocess.single)
     
     // We will skip preprocessing for samples which already have the preprocessed
     // folder in the ouput
     
-    trimmed_reads = BBDUK_TRIM_ADAPTERS(cat_ch, params.adapters, false).reads
+    trimmed_reads = BBDUK_TRIM_ADAPTERS(concatenated, params.adapters, false).reads
     phix_filtered_reads = BBDUK_FILTER_PHIX(trimmed_reads, params.phix, false).reads
     qf_reads = BBDUK_QUALITY_FILTERING(phix_filtered_reads, [], true).reads
     qf_singletons = BBDUK_QUALITY_FILTERING.out.singletons.map({ new Tuple (it[0] + [single_end:true], it[1]) })
