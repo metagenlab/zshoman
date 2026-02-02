@@ -83,24 +83,18 @@ workflow {
     // PRE-PROCESSING //
     ///////////////////
     
-    //Split reads int multi and single lane channels
-    lane_ch = samples.to_preprocess.branch {meta, reads ->
+    // Split reads into multi and single lane channels
+    // For multi lane samples, ensure to have a list with r1 followed by r2
+    // For single lane samples, flatten reads list
+    to_preprocess = samples.to_preprocess.branch {meta, reads ->
         multi: meta.multi_lane == true
+            return [meta, [reads[0], reads[1]].transpose().flatten()]
         single: meta.multi_lane == false
+            return [meta, reads.flatten()]
     }
     
-    //Ensure to have a list with r1 followed by r2 for each sample
-    multi_ch = lane_ch.multi.map{
-        meta, reads -> [meta, [reads[0], reads[1]].transpose().flatten()]
-        }
-
-    //Flatten reads list for single-lane samples
-    single_ch = lane_ch.single.map{
-        meta, reads -> [meta, reads.flatten()]
-        }
-
     // Concat multi lane samples (if any)
-    cat_ch = CAT_FASTQ(multi_ch, false).reads.mix(single_ch)
+    cat_ch = CAT_FASTQ(to_preprocess.multi, false).reads.mix(to_preprocess.single)
     
     // We will skip preprocessing for samples which already have the preprocessed
     // folder in the ouput
