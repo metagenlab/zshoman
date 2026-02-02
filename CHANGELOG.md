@@ -10,6 +10,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Changed
 
+- Avoid redoing contig classification and gene calling when already done. ([#41](https://github.com/metagenlab/zshoman/pull/41)) (Niklaus Johner)
 - Support samples with more than 5 lanes/experiments. ([#40](https://github.com/metagenlab/zshoman/pull/40)) (Farid Chaabane, Niklaus Johner)
 - Improve gene profiling by using coverage instead of number of reads. ([#38](https://github.com/metagenlab/zshoman/pull/38)) (Niklaus Johner)
 - Use MMSEQS2 LINCLUST instead of CDHIT to create the gene catalog. ([#37](https://github.com/metagenlab/zshoman/pull/37)) (Niklaus Johner)

@@ -193,16 +193,6 @@ workflow {
         // Assembly and gene calling //
         ///////////////////////////////
 
-        // If we are not making a gene catalog we can skip samples for which we
-        // already have the annotations and gene counts.
-        if (params.skip_gene_catalog) {
-            preprocessed_samples = preprocessed_samples.filter({
-                (!params.resume_from_output) ||
-                Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations")) ||
-                Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
-                })
-        }
-
         // Skip samples for which spades has already been run and readd afterwards
         samples_spades = preprocessed_samples.branch({
             done: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "assembly"))
@@ -228,7 +218,14 @@ workflow {
             }))
 
         assembly_graph_and_paths = scaffolds.join(graphs).join(paths)
-        contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths).classification
+
+        // skip gene calling for samples for which it was already done
+        assembly_graph_and_paths = assembly_graph_and_paths.branch({
+            done: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "genes"))
+            to_do: true
+            })
+
+        contig_classification = CLASSIFY_4CAC(assembly_graph_and_paths.to_do).classification
 
         filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
         assembly_stats = ASSEMBLY_STATS(filtered_assembly)
@@ -245,6 +242,29 @@ workflow {
         // and prokaryotic genes are compressed
         eukaryotic_genes_aa = PIGZ_COMPRESS_1(eukaryotic_genes.faa).archive
         eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
+
+        // Re-add samples that had already been processed
+        prokaryotic_genes.amino_acid_fasta.mix(
+            assembly_graph_and_paths.done.map({
+                new Tuple (it[0],[Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.faa.gz")])
+            })
+        )
+        prokaryotic_genes.nucleotide_fasta.mix(
+            assembly_graph_and_paths.done.map({
+                new Tuple (it[0],[Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fna.gz")])
+            })
+        )
+        eukaryotic_genes_aa.mix(
+            assembly_graph_and_paths.done.map({
+                new Tuple (it[0],[Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz")])
+            })
+        )
+        eukaryotic_genes_nt.mix(
+            assembly_graph_and_paths.done.map({
+                new Tuple (it[0],[Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz")])
+            })
+        )
+
 
         if (!params.skip_gene_catalog) {
             //////////////////
