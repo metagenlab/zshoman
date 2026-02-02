@@ -56,7 +56,7 @@ workflow {
 
     // Collect all forward and reverse reads per sample 
     samples = Channel.fromList(samples_list).map { 
-            it -> [it[0].id, it[1], it[2]] 
+            it -> [it[0].id.toString(), it[1], it[2]] 
         }.groupTuple()
         .map { id, r1, r2 ->
         // Check if single-end or paired-end
