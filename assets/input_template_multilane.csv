@@ -1,4 +1,5 @@
-sample, fastq_R1, fastq_R1_L2, fastq_R2, fastq_R2_L2
-SAMPLE1_LABEL,/path/to/sample1/forward_reads_L1.fastq,/path/to/sample1/forward_reads_L2.fastq,/path/to/sample1/reverse_reads_L1.fastq,/path/to/sample1/reverse_reads_L2.fastq
-SAMPLE1_LABEL,/path/to/sample2/forward_reads.fastq,,/path/to/sample2/reverse_reads.fastq,
-SAMPLE3_LABEL,/path/to/sample3/reads.fastq,,,
+sample, fastq_R1, fastq_R2
+SAMPLE1_LABEL,/path/to/sample1/forward_reads_L1.fastq,/path/to/sample1/reverse_reads_L1.fastq
+SAMPLE1_LABEL,/path/to/sample1/forward_reads_L2.fastq,/path/to/sample1/forward_reads_L2.fastq
+SAMPLE2_LABEL,/path/to/sample2/forward_reads.fastq,/path/to/sample2/reverse_reads.fastq
+SAMPLE3_LABEL,/path/to/sample3/reads.fastq,
