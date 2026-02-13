@@ -245,22 +245,26 @@ workflow {
 
         // Re-add samples that had already been processed
         prokaryotic_genes_aa = prokaryotic_genes.amino_acid_fasta.mix(
-            assembly_graph_and_paths.done.map({
+            assembly_graph_and_paths.done.filter({
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.faa.gz"))}).map({
                 new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.faa.gz"))
             })
         )
         prokaryotic_genes_nt = prokaryotic_genes.nucleotide_fasta.mix(
-            assembly_graph_and_paths.done.map({
+            assembly_graph_and_paths.done.filter({
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fna.gz"))}).map({
                 new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fna.gz"))
             })
         )
         eukaryotic_genes_aa = eukaryotic_genes_aa.mix(
-            assembly_graph_and_paths.done.map({
+            assembly_graph_and_paths.done.filter({
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz"))}).map({
                 new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz"))
             })
         )
         eukaryotic_genes_nt = eukaryotic_genes_nt.mix(
-            assembly_graph_and_paths.done.map({
+            assembly_graph_and_paths.done.filter({
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz"))}).map({
                 new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz"))
             })
         )
