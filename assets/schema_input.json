@@ -10,7 +10,7 @@
       "sample": {
         "oneOf": [
         { "type": "integer", "minimum": 1 },
-        { "type": "string", "enum": ["auto"] }
+        { "type": "string", "pattern": "^\\S+$" }
       ],
         "errorMessage": "Sample name must be provided and cannot contain spaces",
         "meta": ["id"]

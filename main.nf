@@ -244,24 +244,28 @@ workflow {
         eukaryotic_genes_nt = PIGZ_COMPRESS_2(eukaryotic_genes.codon).archive
 
         // Re-add samples that had already been processed
-        prokaryotic_genes.amino_acid_fasta.mix(
-            assembly_graph_and_paths.done.map({
-                new Tuple (it[0],[Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.faa.gz")])
+        prokaryotic_genes_aa = prokaryotic_genes.amino_acid_fasta.mix(
+            assembly_graph_and_paths.done.filter({
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.faa.gz"))}).map({
+                new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.faa.gz"))
             })
         )
-        prokaryotic_genes.nucleotide_fasta.mix(
-            assembly_graph_and_paths.done.map({
-                new Tuple (it[0],[Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fna.gz")])
+        prokaryotic_genes_nt = prokaryotic_genes.nucleotide_fasta.mix(
+            assembly_graph_and_paths.done.filter({
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fna.gz"))}).map({
+                new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fna.gz"))
             })
         )
-        eukaryotic_genes_aa.mix(
-            assembly_graph_and_paths.done.map({
-                new Tuple (it[0],[Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz")])
+        eukaryotic_genes_aa = eukaryotic_genes_aa.mix(
+            assembly_graph_and_paths.done.filter({
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz"))}).map({
+                new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz"))
             })
         )
-        eukaryotic_genes_nt.mix(
-            assembly_graph_and_paths.done.map({
-                new Tuple (it[0],[Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz")])
+        eukaryotic_genes_nt = eukaryotic_genes_nt.mix(
+            assembly_graph_and_paths.done.filter({
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz"))}).map({
+                new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz"))
             })
         )
 
@@ -272,10 +276,10 @@ workflow {
             //////////////////
 
             // gather all amino acids and nucleotides from prokaryotic and eukaryotic genes
-            all_amino_acids = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa)
+            all_amino_acids = prokaryotic_genes_aa.mix(eukaryotic_genes_aa)
                             .collectFile( {row ->  [ "genes.faa.gz", row[1] ]} )
                             .map( { new Tuple([id: 'all'], it )} )
-            all_nucleotides = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt)
+            all_nucleotides = prokaryotic_genes_nt.mix(eukaryotic_genes_nt)
                             .collectFile( {row ->  [ "genes.fna.gz", row[1] ]} )
                             .map( { new Tuple([id: 'all'], it )} )
 
@@ -303,7 +307,7 @@ workflow {
             /////////////////////////////////////
 
             // We first gather the prokaryotic genes and eukaryotic genes together
-            nt_tuples = prokaryotic_genes.nucleotide_fasta.mix(eukaryotic_genes_nt).groupTuple(size: 2, remainder: true)
+            nt_tuples = prokaryotic_genes_nt.mix(eukaryotic_genes_nt).groupTuple(size: 2, remainder: true)
             // Avoid redoing the mapping and count calculation if it was already done
             nt_tuples = nt_tuples.filter({
                 (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "gene_counts"))
@@ -322,7 +326,7 @@ workflow {
             ///////////////////////////////////
 
             // We first gather the prokaryotic genes and eukaryotic genes together
-            aa_tuples = prokaryotic_genes.amino_acid_fasta.mix(eukaryotic_genes_aa).groupTuple(size: 2, remainder: true)
+            aa_tuples = prokaryotic_genes_aa.mix(eukaryotic_genes_aa).groupTuple(size: 2, remainder: true)
             // Avoid redoing the annotations if it was already done
             aa_tuples = aa_tuples.filter({
                 (!params.resume_from_output) || Files.notExists(Paths.get(outdir_abs, it[0].id, "annotations"))
