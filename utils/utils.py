@@ -22,6 +22,7 @@ def get_argument_parser(
     db_dir=False,
     per_sample=False,
     dry_run=True,
+    others=None,
 ):
     parser = argparse.ArgumentParser()
 
@@ -101,6 +102,11 @@ def get_argument_parser(
             help="Whether the pipeline was run per sample or with the gene catalog."
             "Defaults to false (i.e. gene catalog)",
         )
+
+    if others:
+        for other in others:
+            parser.add_argument(*other["args"], **other["kwargs"])
+
     return parser
 
 
@@ -114,6 +120,7 @@ def parse_arguments(
     db_dir=False,
     per_sample=False,
     dry_run=True,
+    others=None,
 ):
     parser = get_argument_parser(
         samples_file=samples_file,
@@ -125,6 +132,7 @@ def parse_arguments(
         db_dir=db_dir,
         per_sample=per_sample,
         dry_run=dry_run,
+        others=others,
     )
     args = parser.parse_args()
 
