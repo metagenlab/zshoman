@@ -2,17 +2,17 @@
 This script will download the KEGG module database and save it as a csv file.
 """
 
-import argparse
-import logging
+import sys
 from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
 from Bio.KEGG import REST
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("Post-processing")
+sys.path.append(str(Path(__file__).parent.parent))
 
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 # from REST documentation, can get a max of 10 queries
 # in kegg_get
@@ -61,13 +61,10 @@ def parse_modules(handle):
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser("annotations.py")
-    args.add_argument("--db_dir", default="db", help="path to the database directory")
-
-    args = args.parse_args()
-    db_dir = Path(args.db_dir)
-    if not db_dir.exists():
-        db_dir.mkdir()
+    args = parse_arguments(
+        samples_file=False,
+        db_dir=True,
+    )
 
     res = REST.kegg_list("module")
     modules = pd.read_csv(res, sep="\t", names=["module", "description"])
@@ -89,11 +86,11 @@ if __name__ == "__main__":
             "definition",
         ],
     )
-    df.to_csv(Path(db_dir, "kegg_modules.csv"), index=False)
+    df.to_csv(Path(args.db_dir, "kegg_modules.csv"), index=False)
 
     res = REST.kegg_link("module", "ko")
     ko_modules = pd.read_csv(res, sep="\t", names=["ko", "module"])
     ko_modules["ko"] = ko_modules["ko"].str.replace("ko:", "")
     ko_modules["module"] = ko_modules["module"].str.replace("md:", "")
     mapping = defaultdict(list)
-    ko_modules.groupby("ko").agg(list).to_csv(Path(db_dir, "ko_to_modules.csv"))
+    ko_modules.groupby("ko").agg(list).to_csv(Path(args.db_dir, "ko_to_modules.csv"))
