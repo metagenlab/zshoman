@@ -117,7 +117,7 @@ workflow {
     paired_end_reads_merged = BBMAP_MERGE_PAIRS(hf_reads_split.paired, false)
 
     // prepare a single channel preprocessed_samples with elements of the form
-    // (meta, [*_1_unmerged.fastq.gz, *_2_unmerged.fastq.gz, *_merged.fastq.gz, "*.fastq.gz"])
+    // (meta, [*_unmerged_1.fastq.gz, *_unmerged_2.fastq.gz, *_merged.fastq.gz, "*.fastq.gz"])
     // for paired-end and (meta, *.fastq.gz) for single-end samples
     paired_end_reads = hf_singletons.map({ new Tuple (it[0] + [single_end:false], it[1]) })
     paired_end_reads = paired_end_reads.join(paired_end_reads_merged.merged.join(paired_end_reads_merged.unmerged))
@@ -134,8 +134,8 @@ workflow {
                 ):
             new Tuple (
                 it[0],
-                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_1_unmerged.fastq.gz"),
-                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_2_unmerged.fastq.gz"),
+                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_unmerged_1.fastq.gz"),
+                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_unmerged_2.fastq.gz"),
                  Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_merged.fastq.gz"),
                  Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_singletons.fastq.gz")]
                 )
