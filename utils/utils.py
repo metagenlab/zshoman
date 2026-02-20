@@ -19,6 +19,7 @@ def get_argument_parser(
     postprocessed_dir=False,
     analysis_dir=False,
     download_dir=False,
+    db_dir=False,
     per_sample=False,
     dry_run=True,
 ):
@@ -76,6 +77,14 @@ def get_argument_parser(
             help="path to the location where the files should get downloaded to",
         )
 
+    if db_dir:
+        parser.add_argument(
+            "db_dir",
+            default="db",
+            type=Path,
+            help="path to the database directory",
+        )
+
     if dry_run:
         parser.add_argument(
             "-n",
@@ -102,6 +111,7 @@ def parse_arguments(
     postprocessed_dir=False,
     analysis_dir=False,
     download_dir=False,
+    db_dir=False,
     per_sample=False,
     dry_run=True,
 ):
@@ -112,6 +122,7 @@ def parse_arguments(
         postprocessed_dir=postprocessed_dir,
         analysis_dir=analysis_dir,
         download_dir=download_dir,
+        db_dir=db_dir,
         per_sample=per_sample,
         dry_run=dry_run,
     )
@@ -124,6 +135,10 @@ def parse_arguments(
     if postprocessed_dir:
         if not args.postprocessed_dir.exists():
             args.postprocessed_dir.mkdir()
+
+    if db_dir:
+        if not args.db_dir.exists():
+            args.db_dir.mkdir()
 
     return args
 

@@ -5,15 +5,15 @@ download_kegg_db.py script. It also needs the corrected table of module abundanc
 obtained with the correct_module_abundances.py script.
 """
 
-import argparse
-import logging
+import sys
 from pathlib import Path
 
 import pandas as pd
-from Bio.KEGG import REST
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("Post-processing")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 def load_module_data(db_dir):
@@ -40,26 +40,21 @@ def parse_definitions(module_data):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("annotations.py")
-    parser.add_argument("--db_dir", default="db", help="path to the database directory")
-
-    parser.add_argument(
-        "-o",
-        "--output_dir",
-        default="output/post_processed",
-        help="path to the post_processed annotation tables",
+    args = parse_arguments(
+        samples_file=False,
+        postprocessed_dir=True,
+        db_dir=True,
+        per_sample=True,
     )
 
-    args = parser.parse_args()
-    db_dir = Path(args.db_dir)
-    output_dir = Path(args.output_dir)
-
-    module_data = load_module_data(db_dir)
+    module_data = load_module_data(args.db_dir)
     parse_definitions(module_data)
 
-    modules = pd.read_csv(Path(output_dir, "KEGG_modules_corrected.csv"), index_col=0)
+    modules = pd.read_csv(
+        Path(args.postprocessed_dir, "KEGG_modules_corrected.csv"), index_col=0
+    )
     modules = modules.join(module_data["definition"])
-    kos = pd.read_csv(Path(output_dir, "KEGG_ko.csv"), index_col=0)
+    kos = pd.read_csv(Path(args.postprocessed_dir, "KEGG_ko.csv"), index_col=0)
     kos.index = kos.index.str.replace("ko:", "")
     for i, sample in enumerate(kos, 1):
         if i % 100 == 0:
@@ -79,4 +74,4 @@ if __name__ == "__main__":
         )
         modules[sample] = modules[sample].where(complete_modules, 0)
     modules.drop(columns="definition", inplace=True)
-    modules.to_csv(Path(output_dir, "KEGG_complete_modules.csv"))
+    modules.to_csv(Path(args.postprocessed_dir, "KEGG_complete_modules.csv"))
