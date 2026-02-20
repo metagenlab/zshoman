@@ -10,6 +10,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Changed
 
+- Change name of output files from bbmerge to simplify downstream usage. ([#45](https://github.com/metagenlab/zshoman/pull/45)) (Niklaus Johner)
 - Avoid I/O bottleneck when restarting from output to calculate the gene catalog. ([#43](https://github.com/metagenlab/zshoman/pull/43)) (Niklaus Johner)
 - Avoid redoing contig classification and gene calling when already done. ([#41](https://github.com/metagenlab/zshoman/pull/41)) (Niklaus Johner)
 - Support samples with more than 5 lanes/experiments. ([#40](https://github.com/metagenlab/zshoman/pull/40)) (Farid Chaabane, Niklaus Johner)

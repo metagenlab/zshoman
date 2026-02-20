@@ -12,7 +12,7 @@ process BBMAP_BBMERGE {
 
     output:
     tuple val(meta), path("*_merged.fastq.gz")  , emit: merged
-    tuple val(meta), path("*_unmerged.fastq.gz"), emit: unmerged
+    tuple val(meta), path("*_unmerged*.fastq.gz"), emit: unmerged
     tuple val(meta), path("*_ihist.txt")        , emit: ihist
     path  "versions.yml"                        , emit: versions
     path  "*.log"                               , emit: log
@@ -24,7 +24,7 @@ process BBMAP_BBMERGE {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def in_reads = ( interleave ) ? "in=${reads[0]}" : "in1=${reads[0]} in2=${reads[1]}"
-    def out_reads = ( interleave ) ? "out=${prefix}_merged.fastq.gz outu=${prefix}_unmerged.fastq.gz" : "out=${prefix}_merged.fastq.gz outu1=${prefix}_1_unmerged.fastq.gz outu2=${prefix}_2_unmerged.fastq.gz"
+    def out_reads = ( interleave ) ? "out=${prefix}_merged.fastq.gz outu=${prefix}_unmerged.fastq.gz" : "out=${prefix}_merged.fastq.gz outu1=${prefix}_unmerged_1.fastq.gz outu2=${prefix}_unmerged_2.fastq.gz"
 
     """
     maxmem=\$(echo \"$task.memory\"| sed 's/ GB/g/g')

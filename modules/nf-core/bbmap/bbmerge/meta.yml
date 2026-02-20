@@ -46,10 +46,10 @@ output:
           description: |
             Groovy Map containing sample information
             e.g. `[ id:'sample1', single_end:false ]`
-      - "*_unmerged.fastq.gz":
+      - "*_unmerged*.fastq.gz":
           type: file
           description: unmerged reads
-          pattern: "*_unmerged.fastq"
+          pattern: "*_unmerged*.fastq"
   - ihist:
       - meta:
           type: map
