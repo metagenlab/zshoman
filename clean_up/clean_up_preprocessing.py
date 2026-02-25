@@ -3,20 +3,21 @@ This script will remove the preprocessed metagenomes from the output
 directory for samples for which the pipeline is finished.
 """
 
-import argparse
-import logging
+import sys
 from pathlib import Path
 
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("remove-inputs")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 class OutputRemover:
-    def __init__(self, samples_file, output_dir, dry_run):
+    def __init__(self, samples_file, pipeline_outdir, dry_run):
         self.sample_file = Path(samples_file)
-        self.output_dir = Path(output_dir)
+        self.pipeline_outdir = Path(pipeline_outdir)
         self.dry_run = dry_run
 
     def __call__(self):
@@ -29,7 +30,7 @@ class OutputRemover:
         to_delete_size = 0
         for sample in samples:
             keep = False
-            sample_path = Path(self.output_dir, sample)
+            sample_path = Path(self.pipeline_outdir, sample)
             if not Path(sample_path, "preprocessed_reads").exists():
                 continue
             for subdir in ("annotations", "assembly", "gene_counts", "motus", "phanta"):
@@ -69,22 +70,10 @@ class OutputRemover:
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser("clean_up_preprocessing.py")
-    args.add_argument(
-        "samples_file", help="path to the input file containing the list of samples"
-    )
-    args.add_argument(
-        "-o",
-        "--output_dir",
-        default="output",
-        help="path to the output directory of the pipeline",
-    )
-    args.add_argument(
-        "-n",
-        "--dry_run",
-        action="store_true",
-        help="Only list files that would get deleted.",
+    args = parse_arguments(
+        samples_file="mandatory",
+        pipeline_outdir=True,
+        dry_run=True,
     )
 
-    args = args.parse_args()
-    OutputRemover(args.samples_file, args.output_dir, args.dry_run)()
+    OutputRemover(args.samples_file, args.pipeline_outdir, args.dry_run)()
