@@ -15,7 +15,6 @@ from utils.utils import logger
 from utils.utils import parse_arguments
 
 
-
 class TableMerger:
     to_exclude = ["gene_catalog", "pipeline_info", "logs"]
     out_ext = "csv"
@@ -94,6 +93,23 @@ class PhantaMerger(TableMerger):
         ).rename(columns={f"{sample}_": sample})
 
 
+class GeneMerger(TableMerger):
+    out_name = "genes_per_cell"
+
+    def get_table_path(self, sample):
+        return Path(
+            self.pipeline_outdir,
+            sample,
+            "gene_counts_gc",
+            sample + "_genes_per_cell.csv",
+        )
+
+    def load_table(self, sample):
+        return pd.read_csv(
+            self.get_table_path(sample), sep=",", header=None, names=["gene", sample]
+        )
+
+
 if __name__ == "__main__":
     others = [
         {
@@ -107,23 +123,33 @@ if __name__ == "__main__":
         {
             "args": ["--phanta"],
             "kwargs": {"action": "store_true", "help": "merge phanta table"},
-        }
+        },
+        {
+            "args": ["--genes"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "merge gene count table (only if you ran the gene catalog)",
+            },
+        },
         {
             "args": ["--no_cleanup"],
-            "kwargs": {"action": "store_true", "help": "do not remove empty rows from merged tables"},
-        }
+            "kwargs": {
+                "action": "store_true",
+                "help": "do not remove empty rows from merged tables",
+            },
+        },
     ]
     args = parse_arguments(
         samples_file="optional",
         pipeline_outdir=True,
         postprocessed_dir=True,
-        others=others
+        others=others,
     )
 
     if args.motus:
-        MotusMerger(args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix)(
-            not args.no_cleanup
-        )
+        MotusMerger(
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+        )(not args.no_cleanup)
 
     if args.phanta:
         merger = PhantaMerger(
@@ -132,3 +158,8 @@ if __name__ == "__main__":
         merger("relative_taxonomic_abundance", not args.no_cleanup)
         merger("relative_read_abundance", not args.no_cleanup)
         merger("counts", not args.no_cleanup)
+
+    if args.genes:
+        GeneMerger(
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+        )(not args.no_cleanup)
