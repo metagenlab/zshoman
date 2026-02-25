@@ -61,11 +61,11 @@ class AnnotationAbundanceCalculator:
         "PFAMs",
     ]
 
-    def __init__(self, samples_file, pipeline_outdir, output_dir, per_sample):
+    def __init__(self, samples, pipeline_outdir, output_dir, per_sample):
         self.pipeline_outdir = pipeline_outdir
         self.output_dir = output_dir
         self.per_sample = per_sample
-        self.sample_names = self.read_samples_file(samples_file)["sample"]
+        self.sample_names = samples
 
         self.samples = [
             Sample(sname, self.pipeline_outdir) for sname in self.sample_names
@@ -120,11 +120,6 @@ class AnnotationAbundanceCalculator:
                     os.path.join(self.output_dir, f"{colname}.csv")
                 )
 
-    @staticmethod
-    def read_samples_file(samples_file):
-        data = pd.read_csv(args.samples_file, header=0)
-        return data
-
     def get_annotation_abundances(self, annotations, abundances, colname):
         """
         There are several annotations in a cell, coma-separated,
@@ -167,12 +162,12 @@ class AnnotationAbundanceCalculator:
 
 if __name__ == "__main__":
     args = parse_arguments(
-        samples_file="mandatory",
+        samples_file="optional",
         pipeline_outdir=True,
         postprocessed_dir=True,
         per_sample=True,
     )
 
     AnnotationAbundanceCalculator(
-        args.samples_file, args.pipeline_outdir, args.postprocessed_dir, args.per_sample
+        args.samples, args.pipeline_outdir, args.postprocessed_dir, args.per_sample
     )()

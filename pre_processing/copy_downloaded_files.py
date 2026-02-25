@@ -19,10 +19,8 @@ from utils.utils import parse_arguments
 
 
 class SamplesCopier:
-    def __init__(
-        self, samples_file, pipeline_outdir, download_dir, ignore_preprocessing
-    ):
-        self.sample_file = samples_file
+    def __init__(self, samples, pipeline_outdir, download_dir, ignore_preprocessing):
+        self.samples = samples
         self.pipeline_outdir = pipeline_outdir
         self.download_dir = download_dir
         self.expected_subdirs = [
@@ -37,11 +35,8 @@ class SamplesCopier:
             self.expected_subdirs.remove("preprocessed_reads")
 
     def __call__(self):
-        data = pd.read_csv(args.samples_file, header=0)
-        data.set_index("sample", inplace=True)
-        samples = data.index
         to_keep = []
-        for sample in samples:
+        for sample in self.samples:
             if not Path(self.pipeline_outdir, sample).exists():
                 to_keep.append(sample)
                 continue
@@ -54,12 +49,10 @@ class SamplesCopier:
         # Now among the samples that have not been analysed yet,
         # we will copy over the input if available and necessary
         to_copy = []
-        for sample in to_keep:
-            for file in data.loc[sample]:
-                file = file.strip()
-                if not file:
-                    continue
-                file = Path(file)
+        for sample_name in to_keep:
+            sample_data = self.samples[sample_name]
+            files = sample_data["fastq1"] + sample_data["fastq2"]
+            for file in files:
                 if file.exists():
                     continue
                 # If the file exists in the download folder and is finished downloading
@@ -103,7 +96,7 @@ if __name__ == "__main__":
 
     args = args.parse_args()
     SamplesCopier(
-        args.samples_file,
+        args.samples,
         args.pipeline_outdir,
         args.src,
         args.ignore_preprocessing,

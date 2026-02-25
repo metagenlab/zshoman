@@ -161,17 +161,25 @@ def parse_arguments(
     if db_dir and not args.db_dir.exists():
         args.db_dir.mkdir()
 
+    if samples_file:
+        args.samples = SamplesGetter(args, with_files=(samples_file == "mandatory"))()
+
     return args
 
 
 class SamplesGetter:
     to_exclude = ["gene_catalog", "pipeline_info"]
 
-    def __init__(self, args):
+    def __init__(self, args, with_files=False):
         self.samples_file = args.samples_file
         self.pipeline_outdir = args.pipeline_outdir
+        self.with_files = with_files
 
     def __call__(self):
+        if self.with_files and not self.samples_file:
+            raise RuntimeError(
+                "Cannot request samples with files when determining samples from pipeline output directory."
+            )
         if self.samples_file:
             samples = self.from_samples_file()
         elif self.pipeline_outdir:
@@ -183,9 +191,34 @@ class SamplesGetter:
         logger.info(f"Found {len(samples)} samples.")
         return samples
 
+    @staticmethod
+    def is_paired_end(row):
+        return bool(row.get("fastq_R2", "").strip())
+
     def from_samples_file(self):
         samples_file = self.samples_file.resolve(strict=True)
-        return pd.read_csv(samples_file, header=0)["sample"].unique()
+        samplesheet = pd.read_csv(samples_file, header=0)
+        if not self.with_files:
+            return samplesheet["sample"].unique()
+
+        grouped_by_sample = samplesheet.groupby("sample")
+        samples = {}
+        for sample_name, sample_data in grouped_by_sample:
+            fastq1 = []
+            fastq2 = []
+            paired_end = self.is_paired_end(sample_data.iloc[0])
+            for i, row in sample_data.iterrows():
+                if not paired_end == self.is_paired_end(row):
+                    raise ValueError(f"{sample_name} has paired and single end reads")
+                fastq1.append(Path(row["fastq_R1"].strip()))
+                if paired_end:
+                    fastq2.append(Path(row["fastq_R2"].strip()))
+            samples[sample_name] = {
+                "paired_end": paired_end,
+                "fastq1": fastq1,
+                "fastq2": fastq2,
+            }
+        return samples
 
     def from_pipeline_outdir(self):
         return {

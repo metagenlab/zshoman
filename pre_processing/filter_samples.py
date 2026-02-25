@@ -18,9 +18,15 @@ from utils.utils import parse_arguments
 
 class SamplesCleaner:
     def __init__(
-        self, samples_file, pipeline_outdir, ignore_preprocessing, only_downloaded
+        self,
+        samples,
+        samples_file,
+        pipeline_outdir,
+        ignore_preprocessing,
+        only_downloaded,
     ):
-        self.sample_file = Path(samples_file)
+        self.samples = samples
+        self.samples_file = samples_file
         self.pipeline_outdir = Path(pipeline_outdir)
         self.only_downloaded = only_downloaded
         self.expected_subdirs = [
@@ -35,11 +41,8 @@ class SamplesCleaner:
             self.expected_subdirs.remove("preprocessed_reads")
 
     def __call__(self):
-        data = pd.read_csv(args.samples_file, header=0)
-        data.set_index("sample", inplace=True)
-        samples = data.index
         to_keep = []
-        for sample in samples:
+        for sample in self.samples:
             if not Path(self.pipeline_outdir, sample).exists():
                 to_keep.append(sample)
                 continue
@@ -50,14 +53,12 @@ class SamplesCleaner:
                     break
 
         if self.only_downloaded:
-            for sample, files in data.iterrows():
+            for sample, sample_data in self.samples.itesm():
                 if sample not in to_keep:
                     continue
                 remove = False
+                files = sample_data["fastq1"] + sample_data["fastq2"]
                 for file in files:
-                    file = file.strip()
-                    if not file:
-                        continue
                     file = Path(file)
                     if not file.exists():
                         remove = True
@@ -77,6 +78,8 @@ class SamplesCleaner:
         if outname.exists():
             logger.warning(f"{outname} exists already, interrupting")
             sys.exit()
+
+        data = pd.read_csv(self.samples_file, header=0).set_index("sample")
         data[data.index.isin(to_keep)].to_csv(outname, index=True)
 
 
@@ -105,6 +108,7 @@ if __name__ == "__main__":
     )
 
     SamplesCleaner(
+        args.samples,
         args.samples_file,
         args.pipeline_outdir,
         args.ignore_preprocessing,

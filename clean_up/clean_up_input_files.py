@@ -15,8 +15,8 @@ from utils.utils import parse_arguments
 
 
 class InputRemover:
-    def __init__(self, samples_file, pipeline_outdir, ignore_preprocessing, dry_run):
-        self.sample_file = Path(samples_file)
+    def __init__(self, samples, pipeline_outdir, ignore_preprocessing, dry_run):
+        self.samples = samples
         self.pipeline_outdir = Path(pipeline_outdir)
         self.dry_run = dry_run
         self.expected_subdirs = [
@@ -32,20 +32,11 @@ class InputRemover:
             self.expected_subdirs.remove("preprocessed_reads")
 
     def __call__(self):
-        data = pd.read_csv(args.samples_file, header=0)
-        data.set_index("sample", inplace=True)
-        samples = data.index
         to_keep = []
         to_delete = {}
-        for sample in samples:
+        for sample, sample_data in self.samples.items():
             files = []
-            for file in data.loc[sample]:
-                if pd.isna(file):
-                    continue
-                file = file.strip()
-                if not file:
-                    continue
-                file = Path(file.strip())
+            for file in sample_data["fastq1"] + sample_data["fastq2"]:
                 if file.is_file():
                     files.append(file)
             if not files:
@@ -95,5 +86,5 @@ if __name__ == "__main__":
     )
 
     InputRemover(
-        args.samples_file, args.pipeline_outdir, args.ignore_preprocessing, args.dry_run
+        args.samples, args.pipeline_outdir, args.ignore_preprocessing, args.dry_run
     )()

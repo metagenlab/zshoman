@@ -206,13 +206,12 @@ def plot_preprocessing_boxplot(data, analysis_dir, type="reads"):
 
 if __name__ == "__main__":
     args = parse_arguments(
-        samples_file="mandatory",
+        samples_file="optional",
         pipeline_outdir=True,
         analysis_dir=True,
     )
 
-    samples = pd.read_csv(args.samples_file, header=0)["sample"]
-    logger.info(f"Found {len(samples)} samples.")
+    samples = args.samples
     log_dir = Path(args.pipeline_outdir, "logs")
 
     data = defaultdict(dict)

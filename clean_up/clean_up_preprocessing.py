@@ -15,20 +15,17 @@ from utils.utils import parse_arguments
 
 
 class OutputRemover:
-    def __init__(self, samples_file, pipeline_outdir, dry_run):
-        self.sample_file = Path(samples_file)
+    def __init__(self, samples, pipeline_outdir, dry_run):
+        self.samples = samples
         self.pipeline_outdir = Path(pipeline_outdir)
         self.dry_run = dry_run
 
     def __call__(self):
-        data = pd.read_csv(args.samples_file, header=0)
-        data.set_index("sample", inplace=True)
-        samples = data.index
         to_keep = []
         to_delete = {}
         to_delete_nfiles = 0
         to_delete_size = 0
-        for sample in samples:
+        for sample in self.samples:
             keep = False
             sample_path = Path(self.pipeline_outdir, sample)
             if not Path(sample_path, "preprocessed_reads").exists():
@@ -71,9 +68,9 @@ class OutputRemover:
 
 if __name__ == "__main__":
     args = parse_arguments(
-        samples_file="mandatory",
+        samples_file="optional",
         pipeline_outdir=True,
         dry_run=True,
     )
 
-    OutputRemover(args.samples_file, args.pipeline_outdir, args.dry_run)()
+    OutputRemover(args.samples, args.pipeline_outdir, args.dry_run)()

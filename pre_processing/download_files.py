@@ -19,34 +19,28 @@ from utils.utils import parse_arguments
 
 
 class FileDownloader:
-    def __init__(self, samples_file, input_dir, output_dir):
+    def __init__(self, samples, input_dir, output_dir):
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.files = self.read_samples_file(samples_file)
-
+        self.files = self.get_files(samples)
         logger.info(f"Found {len(self.files)} files to download.")
         input("ctl-c to cancel")
 
-    def read_samples_file(self, samples_file):
+    def get_files(self, samples):
         files = []
         filenames = set()
-        with open(samples_file) as file_handle:
-            # Skip title row
-            next(file_handle)
-            for line in file_handle:
-                res = line.split(",")
-                res = [el.strip() for el in res if el.strip()]
-                sample = res[0]
-                if Path(self.output_dir, sample, "preprocessed_reads").exists():
-                    logger.info(f"skipping {sample}")
+        for sample_name, sample_data in samples.items():
+            if Path(self.output_dir, sample_name, "preprocessed_reads").exists():
+                logger.info(f"skipping {sample_name}")
+                continue
+            sample_files = sample_data["fastq1"] + sample_data["fastq2"]
+            for file in sample_files:
+                filename = file.name
+                if Path(self.input_dir, filename).is_file():
+                    logger.info(f"skipping {sample_name}, {filename}")
                     continue
-                for file in res[1:]:
-                    filename = file.rsplit("/", 1)[-1]
-                    if Path(self.input_dir, filename).is_file():
-                        logger.info(f"skipping {sample}, {filename}")
-                        continue
-                    filenames.add(filename)
-                    files.append(file)
+                filenames.add(filename)
+                files.append(file)
 
         # Make sure all files are different
         assert len(filenames) == len(files)
@@ -103,6 +97,6 @@ if __name__ == "__main__":
                 outfile_handle.write(", ".join(res) + "\n")
 
     if not args.skip_download:
-        FileDownloader(args.samples_file, args.pipeline_indir, args.pipeline_outdir)(
+        FileDownloader(args.samples, args.pipeline_indir, args.pipeline_outdir)(
             args.threads
         )

@@ -20,12 +20,11 @@ class TableMerger:
     to_exclude = ["gene_catalog", "pipeline_info", "logs"]
     out_ext = "csv"
 
-    def __init__(self, samples_file, pipeline_outdir, postprocessed_dir, prefix):
+    def __init__(self, samples, pipeline_outdir, postprocessed_dir, prefix):
         self.pipeline_outdir = Path(pipeline_outdir)
         self.postprocessed_dir = Path(postprocessed_dir)
         self.out_prefix = prefix
-        self.samples = pd.read_csv(args.samples_file, header=0)["sample"]
-        logger.info(f"Found {len(self.samples)} samples.")
+        self.samples = samples
 
     def load_table(self, sample):
         raise NotImplementedError()
@@ -115,20 +114,20 @@ if __name__ == "__main__":
         }
     ]
     args = parse_arguments(
-        samples_file="mandatory",
+        samples_file="optional",
         pipeline_outdir=True,
         postprocessed_dir=True,
         others=others
     )
 
     if args.motus:
-        MotusMerger(args.samples_file, args.pipeline_outdir, args.postprocessed_dir, args.prefix)(
+        MotusMerger(args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix)(
             not args.no_cleanup
         )
 
     if args.phanta:
         merger = PhantaMerger(
-            args.samples_file, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
         )
         merger("relative_taxonomic_abundance", not args.no_cleanup)
         merger("relative_read_abundance", not args.no_cleanup)

@@ -16,13 +16,10 @@ from utils.utils import parse_arguments
 class FileCollector:
     to_exclude = ["gene_catalog", "pipeline_info"]
 
-    def __init__(self, input_dir, output_dir):
+    def __init__(self, samples, input_dir, output_dir):
         self.input_dir = Path(input_dir)
         self.output_dir = Path(output_dir)
-        self.samples = {
-            el.name for el in self.input_dir.glob("*") if el.name not in self.to_exclude
-        }
-        logger.info(f"Found {len(self.samples)} samples.")
+        self.samples = samples
 
     def __call__(self, phanta=False):
         if phanta:
@@ -52,10 +49,12 @@ if __name__ == "__main__":
         }
     ]
     args = parse_arguments(
-        samples_file="mandatory",
+        samples_file="optional",
         pipeline_outdir=True,
         postprocessed_dir=True,
         others=others,
     )
 
-    FileCollector(args.pipeline_outdir, args.postprocessed_dir)(phanta=args.phanta)
+    FileCollector(args.samples, args.pipeline_outdir, args.postprocessed_dir)(
+        phanta=args.phanta
+    )
