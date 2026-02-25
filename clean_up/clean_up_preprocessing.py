@@ -22,7 +22,7 @@ class OutputRemover:
         self.dry_run = dry_run
 
     def required_subdirs(self):
-        required_subdirs = ["assembly", "motus", "phanta"]
+        required_subdirs = ["assembly", "motus", "phanta", "genes"]
         if self.per_sample:
             required_subdirs.extend(["annotations", "gene_counts"])
         else:
