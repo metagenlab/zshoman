@@ -193,11 +193,15 @@ class SamplesGetter:
 
     @staticmethod
     def is_paired_end(row):
+        val = row.get("fastq_R2", "")
+        if pd.isnull(val):
+            return False
+
         return bool(row.get("fastq_R2", "").strip())
 
     def from_samples_file(self):
         samples_file = self.samples_file.resolve(strict=True)
-        samplesheet = pd.read_csv(samples_file, header=0)
+        samplesheet = pd.read_csv(samples_file, header=0, skipinitialspace=True)
         samplesheet["sample"] = samplesheet["sample"].astype(str)
 
         if not self.with_files:
@@ -215,6 +219,7 @@ class SamplesGetter:
                 fastq1.append(Path(row["fastq_R1"].strip()))
                 if paired_end:
                     fastq2.append(Path(row["fastq_R2"].strip()))
+
             samples[sample_name] = {
                 "paired_end": paired_end,
                 "fastq1": fastq1,
