@@ -6,15 +6,16 @@ will need to be restarted. This script allows to download the files
 in advance, and rewrites the input file to point to the downloaded files.
 """
 
-import argparse
-import logging
 import os
 import subprocess
+import sys
 from multiprocessing import Pool
 from pathlib import Path
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("Post-processing")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 class FileDownloader:
@@ -60,51 +61,38 @@ class FileDownloader:
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser("download_files.py")
-    args.add_argument(
-        "samples_file",
-        type=Path,
-        help="path to the input file containing the list of samples",
-    )
-    args.add_argument(
-        "input_dir",
-        default="input",
-        type=Path,
-        help="path to the location where the files should get downloaded to",
-    )
-    args.add_argument(
-        "-o",
-        "--output_dir",
-        default="output",
-        type=Path,
-        help="path to the output directory of the pipeline",
-    )
-    args.add_argument("-n", help="number of parallel processes. Default is 10.")
-    args.add_argument(
-        "-f",
-        "--output_samples_file",
-        type=Path,
-        help="ouput sample file name. Defaults to [samples_file]_downloaded.csv",
-    )
-    args.add_argument(
-        "--skip_download",
-        action="store_true",
-        help="ouput sample file name. Defaults to [samples_file]_downloaded.csv",
+    others = [
+        {
+            "args": ["--postfix"],
+            "kwargs": {
+                "default": "downloaded",
+                "help": "postfix for output samplesheet filename",
+            },
+        },
+        {
+            "args": ["--skip_download"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "Do not actually download the files, only rewrite the samplesheet.",
+            },
+        },
+    ]
+
+    args = parse_arguments(
+        samples_file="mandatory",
+        pipeline_indir=True,
+        pipeline_outdir=True,
+        threads=True,
+        others=others,
     )
 
-    args = args.parse_args()
-
-    if not args.input_dir.exists():
-        os.mkdir(args.input_dir)
-
-    if not args.output_samples_file:
-        args.output_samples_file = Path(
-            args.samples_file.parent,
-            args.samples_file.stem + "_downloaded" + args.samples_file.suffix,
-        )
+    output_samples_file = Path(
+        args.samples_file.parent,
+        f"{args.samples_file.stem}_{args.postfix}{args.samples_file.suffix}",
+    )
 
     with open(args.samples_file) as infile_handle:
-        with open(args.output_samples_file, "w") as outfile_handle:
+        with open(output_samples_file, "w") as outfile_handle:
             outfile_handle.write(next(infile_handle))
             for line in infile_handle:
                 res = [el.strip() for el in line.split(",")]
@@ -115,5 +103,6 @@ if __name__ == "__main__":
                 outfile_handle.write(", ".join(res) + "\n")
 
     if not args.skip_download:
-        n = int(args.n or 10)
-        FileDownloader(args.samples_file, args.input_dir, args.output_dir)(n)
+        FileDownloader(args.samples_file, args.pipeline_indir, args.pipeline_outdir)(
+            args.threads
+        )

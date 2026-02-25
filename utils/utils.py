@@ -22,6 +22,7 @@ def get_argument_parser(
     db_dir=False,
     per_sample=False,
     dry_run=True,
+    threads=False,
     others=None,
 ):
     parser = argparse.ArgumentParser()
@@ -95,6 +96,15 @@ def get_argument_parser(
             help="Only list files that would get deleted.",
         )
 
+    if threads:
+        parser.add_argument(
+            "-t",
+            "--threads",
+            type=int,
+            default=8,
+            help="Number of parallel processes to use.",
+        )
+
     if per_sample:
         parser.add_argument(
             "--per_sample",
@@ -121,6 +131,7 @@ def parse_arguments(
     db_dir=False,
     per_sample=False,
     dry_run=True,
+    threads=False,
     others=None,
 ):
     parser = get_argument_parser(
@@ -133,6 +144,7 @@ def parse_arguments(
         db_dir=db_dir,
         per_sample=per_sample,
         dry_run=dry_run,
+        threads=threads,
         others=others,
     )
     args = parser.parse_args()
