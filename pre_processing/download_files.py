@@ -19,10 +19,11 @@ from utils.utils import parse_arguments
 
 
 class FileDownloader:
-    def __init__(self, samples, input_dir, output_dir):
+    def __init__(self, samples, input_dir, output_dir, skip_preprocessed):
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.files = self.get_files(samples)
+        self.skip_preprocessed = skip_preprocessed
         logger.info(f"Found {len(self.files)} files to download.")
         input("ctl-c to cancel")
 
@@ -30,7 +31,10 @@ class FileDownloader:
         files = []
         filenames = set()
         for sample_name, sample_data in samples.items():
-            if Path(self.output_dir, sample_name, "preprocessed_reads").exists():
+            if (
+                self.skip_preprocessed
+                and Path(self.output_dir, sample_name, "preprocessed_reads").exists()
+            ):
                 logger.info(f"skipping {sample_name}")
                 continue
             sample_files = sample_data["fastq1"] + sample_data["fastq2"]
@@ -70,6 +74,13 @@ if __name__ == "__main__":
                 "help": "Do not actually download the files, only rewrite the samplesheet.",
             },
         },
+        {
+            "args": ["--skip_preprocessed"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "Skip samples which have already been pre-processed.",
+            },
+        },
     ]
 
     args = parse_arguments(
@@ -97,6 +108,9 @@ if __name__ == "__main__":
                 outfile_handle.write(", ".join(res) + "\n")
 
     if not args.skip_download:
-        FileDownloader(args.samples, args.pipeline_indir, args.pipeline_outdir)(
-            args.threads
-        )
+        FileDownloader(
+            args.samples,
+            args.pipeline_indir,
+            args.pipeline_outdir,
+            args.skip_preprocessed,
+        )(args.threads)
