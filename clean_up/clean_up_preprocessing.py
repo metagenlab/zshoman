@@ -15,10 +15,18 @@ from utils.utils import parse_arguments
 
 
 class OutputRemover:
-    def __init__(self, samples, pipeline_outdir, dry_run):
+    def __init__(self, samples, pipeline_outdir, per_sample, dry_run):
         self.samples = samples
         self.pipeline_outdir = Path(pipeline_outdir)
+        self.per_sample = per_sample
         self.dry_run = dry_run
+
+    def required_subdirs(self):
+        required_subdirs = ["assembly", "motus", "phanta"]
+        if self.per_sample:
+            required_subdirs.extend(["annotations", "gene_counts"])
+        else:
+            required_subdirs.extend(["gene_counts_gc"])
 
     def __call__(self):
         to_keep = []
@@ -70,7 +78,8 @@ if __name__ == "__main__":
     args = parse_arguments(
         samples_file="optional",
         pipeline_outdir=True,
+        per_sample=True,
         dry_run=True,
     )
 
-    OutputRemover(args.samples, args.pipeline_outdir, args.dry_run)()
+    OutputRemover(args.samples, args.pipeline_outdir, args.per_sample, args.dry_run)()
