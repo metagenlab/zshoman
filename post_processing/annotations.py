@@ -35,6 +35,15 @@ class Sample:
         )
 
     @property
+    def gene_file_gc(self):
+        return Path(
+            self.pipeline_outdir,
+            self.name,
+            "gene_counts_gc",
+            f"{self.name}_genes_per_cell.csv",
+        )
+
+    @property
     def annotation_file(self):
         return Path(
             self.pipeline_outdir,
@@ -84,7 +93,9 @@ class AnnotationAbundanceCalculator:
         if not self.per_sample:
             annotations = self.load_annotations()
             abundances = reduce(
-                lambda left, right: pd.join(left, right),
+                lambda left, right: pd.merge(
+                    left, right, how="outer", left_index=True, right_index=True
+                ),
                 (self.load_abundances(sample) for sample in self.samples),
             )
 
@@ -153,11 +164,21 @@ class AnnotationAbundanceCalculator:
         data.where(data != "-", np.nan, inplace=True)
         return data
 
-    @staticmethod
-    def load_abundances(sample):
-        return pd.read_csv(
-            sample.gene_file, delimiter=",", index_col=0, names=["gene", sample.name]
-        )
+    def load_abundances(self, sample):
+        if self.per_sample:
+            return pd.read_csv(
+                sample.gene_file,
+                delimiter=",",
+                index_col=0,
+                names=["gene", sample.name],
+            )
+        else:
+            return pd.read_csv(
+                sample.gene_file_gc,
+                delimiter=",",
+                index_col=0,
+                names=["gene", sample.name],
+            )
 
 
 if __name__ == "__main__":
