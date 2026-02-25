@@ -70,8 +70,8 @@ class OutputDirCleaner:
         paired_to_delete = self.get_dirs_to_delete(
             "preprocessed_reads",
             [
-                "_1_unmerged.fastq.gz",
-                "_2_unmerged.fastq.gz",
+                "_unmerged_1.fastq.gz",
+                "_unmerged_2.fastq.gz",
                 "_merged.fastq.gz",
                 "_host_filtered_1.fastq.gz",
                 "_host_filtered_2.fastq.gz",
