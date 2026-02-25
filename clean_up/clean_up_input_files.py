@@ -3,20 +3,21 @@ This script will remove the downloaded input files for samples for which
 the pipeline is finished.
 """
 
-import argparse
-import logging
+import sys
 from pathlib import Path
 
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("remove-inputs")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 class InputRemover:
-    def __init__(self, samples_file, output_dir, ignore_preprocessing, dry_run):
+    def __init__(self, samples_file, pipeline_outdir, ignore_preprocessing, dry_run):
         self.sample_file = Path(samples_file)
-        self.output_dir = Path(output_dir)
+        self.pipeline_outdir = Path(pipeline_outdir)
         self.dry_run = dry_run
         self.expected_subdirs = [
             ".",
@@ -50,7 +51,7 @@ class InputRemover:
             if not files:
                 continue
             for subdir in self.expected_subdirs:
-                if not Path(self.output_dir, sample, subdir).exists():
+                if not Path(self.pipeline_outdir, sample, subdir).exists():
                     to_keep.append(sample)
                     logger.info(f"{sample}: missing {subdir}")
                     break
@@ -76,29 +77,23 @@ class InputRemover:
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser("clean_up_preprocessing.py")
-    args.add_argument(
-        "samples_file", help="path to the input file containing the list of samples"
-    )
-    args.add_argument(
-        "-o",
-        "--output_dir",
-        default="output",
-        help="path to the output directory of the pipeline",
-    )
-    args.add_argument(
-        "--ignore_preprocessing",
-        action="store_true",
-        help="remove input even if preprocessed_reads folder is missing",
-    )
-    args.add_argument(
-        "-n",
-        "--dry_run",
-        action="store_true",
-        help="Only list files that would get deleted.",
+    others = [
+        {
+            "args": ["--ignore_preprocessing"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "remove input even if preprocessed_reads folder is missing",
+            },
+        },
+    ]
+
+    args = parse_arguments(
+        samples_file="mandatory",
+        pipeline_outdir=True,
+        dry_run=True,
+        others=others,
     )
 
-    args = args.parse_args()
     InputRemover(
-        args.samples_file, args.output_dir, args.ignore_preprocessing, args.dry_run
+        args.samples_file, args.pipeline_outdir, args.ignore_preprocessing, args.dry_run
     )()
