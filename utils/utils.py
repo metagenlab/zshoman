@@ -21,7 +21,7 @@ def get_argument_parser(
     analysis_dir=False,
     db_dir=False,
     per_sample=False,
-    dry_run=True,
+    dry_run=False,
     threads=False,
     others=None,
 ):
@@ -130,7 +130,7 @@ def parse_arguments(
     analysis_dir=False,
     db_dir=False,
     per_sample=False,
-    dry_run=True,
+    dry_run=False,
     threads=False,
     others=None,
 ):
