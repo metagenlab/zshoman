@@ -14,11 +14,11 @@ logger = logging.getLogger("zshoman utils")
 
 def get_argument_parser(
     samples_file="mandatory",
+    pipeline_indir=False,
     pipeline_outdir=False,
     pipeline_workdir=False,
     postprocessed_dir=False,
     analysis_dir=False,
-    download_dir=False,
     db_dir=False,
     per_sample=False,
     dry_run=True,
@@ -34,6 +34,15 @@ def get_argument_parser(
             "--samples_file",
             type=Path,
             help="path to samples csv file.",
+        )
+
+    if pipeline_indir:
+        parser.add_argument(
+            "-o",
+            "--pipeline_indir",
+            default="input",
+            type=Path,
+            help="path to the input directory of the pipeline where the raw reads are stored.",
         )
 
     if pipeline_outdir:
@@ -70,14 +79,6 @@ def get_argument_parser(
             help="path to the work directory of the pipeline",
         )
 
-    if download_dir:
-        parser.add_argument(
-            "download_dir",
-            default="input",
-            type=Path,
-            help="path to the location where the files should get downloaded to",
-        )
-
     if db_dir:
         parser.add_argument(
             "db_dir",
@@ -112,11 +113,11 @@ def get_argument_parser(
 
 def parse_arguments(
     samples_file="mandatory",
+    pipeline_indir=False,
     pipeline_outdir=False,
     pipeline_workdir=False,
     postprocessed_dir=False,
     analysis_dir=False,
-    download_dir=False,
     db_dir=False,
     per_sample=False,
     dry_run=True,
@@ -124,11 +125,11 @@ def parse_arguments(
 ):
     parser = get_argument_parser(
         samples_file=samples_file,
+        pipeline_indir=pipeline_indir,
         pipeline_outdir=pipeline_outdir,
         pipeline_workdir=pipeline_workdir,
         postprocessed_dir=postprocessed_dir,
         analysis_dir=analysis_dir,
-        download_dir=download_dir,
         db_dir=db_dir,
         per_sample=per_sample,
         dry_run=dry_run,
@@ -136,17 +137,17 @@ def parse_arguments(
     )
     args = parser.parse_args()
 
-    if analysis_dir:
-        if not args.analysis_dir.exists():
-            args.analysis_dir.mkdir()
+    if pipeline_indir and not pipeline_indir.exists():
+        args.pipeline_indir.mkdir()
 
-    if postprocessed_dir:
-        if not args.postprocessed_dir.exists():
-            args.postprocessed_dir.mkdir()
+    if analysis_dir and not args.analysis_dir.exists():
+        args.analysis_dir.mkdir()
 
-    if db_dir:
-        if not args.db_dir.exists():
-            args.db_dir.mkdir()
+    if postprocessed_dir and not args.postprocessed_dir.exists():
+        args.postprocessed_dir.mkdir()
+
+    if db_dir and not args.db_dir.exists():
+        args.db_dir.mkdir()
 
     return args
 
