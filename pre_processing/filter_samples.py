@@ -22,6 +22,7 @@ class SamplesCleaner:
         samples,
         samples_file,
         pipeline_outdir,
+        per_sample,
         ignore_preprocessing,
         only_downloaded,
     ):
@@ -30,14 +31,16 @@ class SamplesCleaner:
         self.pipeline_outdir = Path(pipeline_outdir)
         self.only_downloaded = only_downloaded
         self.expected_subdirs = [
-            "annotations",
             "assembly",
-            "gene_counts",
             "genes",
             "motus",
             "phanta",
             "preprocessed_reads",
         ]
+        if per_sample:
+            self.expected_subdirs.extend(["gene_counts", "annotations"])
+        else:
+            self.expected_subdirs.append("gene_counts_gc")
         if ignore_preprocessing:
             self.expected_subdirs.remove("preprocessed_reads")
 
@@ -105,6 +108,7 @@ if __name__ == "__main__":
     args = parse_arguments(
         samples_file="mandatory",
         pipeline_outdir=True,
+        per_sample=True,
         others=others,
     )
 
@@ -112,6 +116,7 @@ if __name__ == "__main__":
         args.samples,
         args.samples_file,
         args.pipeline_outdir,
+        args.per_sample,
         args.ignore_preprocessing,
         args.only_downloaded,
     )()
