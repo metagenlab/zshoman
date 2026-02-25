@@ -33,6 +33,7 @@ class SamplesCleaner:
             "annotations",
             "assembly",
             "gene_counts",
+            "genes",
             "motus",
             "phanta",
             "preprocessed_reads",
