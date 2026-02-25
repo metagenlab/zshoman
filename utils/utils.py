@@ -198,6 +198,8 @@ class SamplesGetter:
     def from_samples_file(self):
         samples_file = self.samples_file.resolve(strict=True)
         samplesheet = pd.read_csv(samples_file, header=0)
+        samplesheet["sample"] = samplesheet["sample"].astype(str)
+
         if not self.with_files:
             return samplesheet["sample"].unique()
 
