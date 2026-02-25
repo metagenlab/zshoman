@@ -4,22 +4,24 @@ are present from an input file and optionally for which the input
 file has not been downloaded yet.
 """
 
-import argparse
-import logging
 import sys
 import time
 from pathlib import Path
 
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("filter-samples")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 class SamplesCleaner:
-    def __init__(self, samples_file, output_dir, ignore_preprocessing, only_downloaded):
+    def __init__(
+        self, samples_file, pipeline_outdir, ignore_preprocessing, only_downloaded
+    ):
         self.sample_file = Path(samples_file)
-        self.output_dir = Path(output_dir)
+        self.pipeline_outdir = Path(pipeline_outdir)
         self.only_downloaded = only_downloaded
         self.expected_subdirs = [
             "annotations",
@@ -38,11 +40,11 @@ class SamplesCleaner:
         samples = data.index
         to_keep = []
         for sample in samples:
-            if not Path(self.output_dir, sample).exists():
+            if not Path(self.pipeline_outdir, sample).exists():
                 to_keep.append(sample)
                 continue
             for subdir in self.expected_subdirs:
-                if not Path(self.output_dir, sample, subdir).exists():
+                if not Path(self.pipeline_outdir, sample, subdir).exists():
                     to_keep.append(sample)
                     logger.info(f"{sample}: missing {subdir}")
                     break
@@ -79,31 +81,32 @@ class SamplesCleaner:
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser("clean_up_preprocessing.py")
-    args.add_argument(
-        "samples_file", help="path to the input file containing the list of samples"
-    )
-    args.add_argument(
-        "-o",
-        "--output_dir",
-        default="output",
-        help="path to the output directory of the pipeline",
-    )
-    args.add_argument(
-        "--ignore_preprocessing",
-        action="store_true",
-        help="filter out sample even if preprocessed_reads folder is missing",
-    )
-    args.add_argument(
-        "--only_downloaded",
-        action="store_true",
-        help="filter out sample if input files have not been downloaded yet",
+    others = [
+        {
+            "args": ["--ignore_preprocessing"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "filter out sample even if preprocessed_reads folder is missing",
+            },
+        },
+        {
+            "args": ["--only_downloaded"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "filter out sample if input files have not been downloaded yet",
+            },
+        },
+    ]
+
+    args = parse_arguments(
+        samples_file="mandatory",
+        pipeline_outdir=True,
+        others=others,
     )
 
-    args = args.parse_args()
     SamplesCleaner(
         args.samples_file,
-        args.output_dir,
+        args.pipeline_outdir,
         args.ignore_preprocessing,
         args.only_downloaded,
     )()
