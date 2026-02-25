@@ -21,12 +21,14 @@ class OutputRemover:
         self.per_sample = per_sample
         self.dry_run = dry_run
 
+    @property
     def required_subdirs(self):
         required_subdirs = ["assembly", "motus", "phanta", "genes"]
         if self.per_sample:
             required_subdirs.extend(["annotations", "gene_counts"])
         else:
             required_subdirs.extend(["gene_counts_gc"])
+        return required_subdirs
 
     def __call__(self):
         to_keep = []
@@ -38,7 +40,7 @@ class OutputRemover:
             sample_path = Path(self.pipeline_outdir, sample)
             if not Path(sample_path, "preprocessed_reads").exists():
                 continue
-            for subdir in ("annotations", "assembly", "gene_counts", "motus", "phanta"):
+            for subdir in self.required_subdirs:
                 if not Path(sample_path, subdir).exists():
                     keep = True
                     to_keep.append(sample)
