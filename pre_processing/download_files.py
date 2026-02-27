@@ -6,46 +6,45 @@ will need to be restarted. This script allows to download the files
 in advance, and rewrites the input file to point to the downloaded files.
 """
 
-import argparse
-import logging
 import os
 import subprocess
+import sys
 from multiprocessing import Pool
 from pathlib import Path
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("Post-processing")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 class FileDownloader:
-    def __init__(self, samples_file, input_dir, output_dir):
+    def __init__(self, samples, input_dir, output_dir, skip_preprocessed):
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.files = self.read_samples_file(samples_file)
-
+        self.skip_preprocessed = skip_preprocessed
+        self.files = self.get_files(samples)
         logger.info(f"Found {len(self.files)} files to download.")
         input("ctl-c to cancel")
 
-    def read_samples_file(self, samples_file):
+    def get_files(self, samples):
         files = []
         filenames = set()
-        with open(samples_file) as file_handle:
-            # Skip title row
-            next(file_handle)
-            for line in file_handle:
-                res = line.split(",")
-                res = [el.strip() for el in res if el.strip()]
-                sample = res[0]
-                if Path(self.output_dir, sample, "preprocessed_reads").exists():
-                    logger.info(f"skipping {sample}")
+        for sample_name, sample_data in samples.items():
+            if (
+                self.skip_preprocessed
+                and Path(self.output_dir, sample_name, "preprocessed_reads").exists()
+            ):
+                logger.info(f"skipping {sample_name}")
+                continue
+            sample_files = sample_data["fastq1"] + sample_data["fastq2"]
+            for file in sample_files:
+                filename = Path(file).name
+                if Path(self.input_dir, filename).is_file():
+                    logger.info(f"skipping {sample_name}, {filename}")
                     continue
-                for file in res[1:]:
-                    filename = file.rsplit("/", 1)[-1]
-                    if Path(self.input_dir, filename).is_file():
-                        logger.info(f"skipping {sample}, {filename}")
-                        continue
-                    filenames.add(filename)
-                    files.append(file)
+                filenames.add(filename)
+                files.append(file)
 
         # Make sure all files are different
         assert len(filenames) == len(files)
@@ -60,60 +59,60 @@ class FileDownloader:
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser("download_files.py")
-    args.add_argument(
-        "samples_file",
-        type=Path,
-        help="path to the input file containing the list of samples",
-    )
-    args.add_argument(
-        "input_dir",
-        default="input",
-        type=Path,
-        help="path to the location where the files should get downloaded to",
-    )
-    args.add_argument(
-        "-o",
-        "--output_dir",
-        default="output",
-        type=Path,
-        help="path to the output directory of the pipeline",
-    )
-    args.add_argument("-n", help="number of parallel processes. Default is 10.")
-    args.add_argument(
-        "-f",
-        "--output_samples_file",
-        type=Path,
-        help="ouput sample file name. Defaults to [samples_file]_downloaded.csv",
-    )
-    args.add_argument(
-        "--skip_download",
-        action="store_true",
-        help="ouput sample file name. Defaults to [samples_file]_downloaded.csv",
+    others = [
+        {
+            "args": ["--postfix"],
+            "kwargs": {
+                "default": "downloaded",
+                "help": "postfix for output samplesheet filename",
+            },
+        },
+        {
+            "args": ["--skip_download"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "Do not actually download the files, only rewrite the samplesheet.",
+            },
+        },
+        {
+            "args": ["--skip_preprocessed"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "Skip samples which have already been pre-processed.",
+            },
+        },
+    ]
+
+    args = parse_arguments(
+        samples_file="mandatory",
+        pipeline_indir=True,
+        pipeline_outdir=True,
+        threads=True,
+        others=others,
     )
 
-    args = args.parse_args()
-
-    if not args.input_dir.exists():
-        os.mkdir(args.input_dir)
-
-    if not args.output_samples_file:
-        args.output_samples_file = Path(
-            args.samples_file.parent,
-            args.samples_file.stem + "_downloaded" + args.samples_file.suffix,
-        )
+    output_samples_file = Path(
+        args.samples_file.parent,
+        f"{args.samples_file.stem}_{args.postfix}{args.samples_file.suffix}",
+    )
 
     with open(args.samples_file) as infile_handle:
-        with open(args.output_samples_file, "w") as outfile_handle:
+        with open(output_samples_file, "w") as outfile_handle:
             outfile_handle.write(next(infile_handle))
             for line in infile_handle:
                 res = [el.strip() for el in line.split(",")]
                 res[1:] = [
-                    os.path.join(args.input_dir, el.rsplit("/", 1)[-1]) if el else ""
+                    os.path.join(args.pipeline_indir, el.rsplit("/", 1)[-1])
+                    if el
+                    else ""
                     for el in res[1:]
                 ]
                 outfile_handle.write(", ".join(res) + "\n")
 
     if not args.skip_download:
-        n = int(args.n or 10)
-        FileDownloader(args.samples_file, args.input_dir, args.output_dir)(n)
+        FileDownloader(
+            args.samples,
+            args.pipeline_indir,
+            args.pipeline_outdir,
+            args.skip_preprocessed,
+        )(args.threads)

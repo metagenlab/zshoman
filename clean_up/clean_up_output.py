@@ -9,20 +9,20 @@ It can also remove preprocessing folders if some files are missing
 there.
 """
 
-import argparse
-import logging
 import shutil
+import sys
 from pathlib import Path
 from pprint import pprint as pp
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("clean-up")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
-class OutputDirCleaner():
-
-    def __init__(self, output_dir, dry_run, assembly, preprocessing):
-        self.output_dir = Path(output_dir)
+class OutputDirCleaner:
+    def __init__(self, pipeline_outdir, dry_run, assembly, preprocessing):
+        self.pipeline_outdir = Path(pipeline_outdir)
         self.dry_run = dry_run
         self.assembly = assembly
         self.preprocessing = preprocessing
@@ -34,7 +34,7 @@ class OutputDirCleaner():
             self.clean_preprocessing()
 
     def get_dirs_to_delete(self, dirname, necesseray_files):
-        outdirs = self.output_dir.glob(f"*/{dirname}")
+        outdirs = self.pipeline_outdir.glob(f"*/{dirname}")
         to_delete = set()
         for outdir in outdirs:
             sample = outdir.parent.name
@@ -62,40 +62,55 @@ class OutputDirCleaner():
 
     def clean_assemblies(self):
         to_delete = self.get_dirs_to_delete(
-            "assembly",
-            [".scaffolds.fa.gz", ".assembly.gfa.gz", ".scaffolds.paths.gz"])
+            "assembly", [".scaffolds.fa.gz", ".assembly.gfa.gz", ".scaffolds.paths.gz"]
+        )
         self.delete_dirs(to_delete, "assembly")
 
     def clean_preprocessing(self):
         paired_to_delete = self.get_dirs_to_delete(
             "preprocessed_reads",
-            ["_1_unmerged.fastq.gz",
-             "_2_unmerged.fastq.gz",
-             "_merged.fastq.gz",
-             "_host_filtered_1.fastq.gz",
-             "_host_filtered_2.fastq.gz",
-             "_host_filtered_singletons.fastq.gz"])
+            [
+                "_unmerged_1.fastq.gz",
+                "_unmerged_2.fastq.gz",
+                "_merged.fastq.gz",
+                "_host_filtered_1.fastq.gz",
+                "_host_filtered_2.fastq.gz",
+                "_host_filtered_singletons.fastq.gz",
+            ],
+        )
         single_to_delete = self.get_dirs_to_delete(
-            "preprocessed_reads",
-            ["_host_filtered.fastq.gz"])
-        self.delete_dirs(paired_to_delete.intersection(single_to_delete),
-                         "preprocessed_reads")
+            "preprocessed_reads", ["_host_filtered.fastq.gz"]
+        )
+        self.delete_dirs(
+            paired_to_delete.intersection(single_to_delete), "preprocessed_reads"
+        )
 
 
-if __name__ == '__main__':
-    args = argparse.ArgumentParser("clean_up_output.py")
-    args.add_argument(
-        "-o", "--output_dir", default="output",
-        help="path to the output directory of the pipeline")
-    args.add_argument(
-        "-n", "--dry_run", action='store_true',
-        help="Only list files that would get deleted.")
-    args.add_argument(
-        "--assembly", action='store_true',
-        help="Clean-up assembly files")
-    args.add_argument(
-        "--preprocessing", action='store_true',
-        help="Clean-up pre-processing files")
+if __name__ == "__main__":
+    others = [
+        {
+            "args": ["--assembly"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "Clean-up assembly files",
+            },
+        },
+        {
+            "args": ["--preprocessing"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "Clean-up pre-processing files",
+            },
+        },
+    ]
 
-    args = args.parse_args()
-    OutputDirCleaner(args.output_dir, args.dry_run, args.assembly, args.preprocessing)()
+    args = parse_arguments(
+        samples_file=False,
+        pipeline_outdir=True,
+        dry_run=True,
+        others=others,
+    )
+
+    OutputDirCleaner(
+        args.pipeline_outdir, args.dry_run, args.assembly, args.preprocessing
+    )()

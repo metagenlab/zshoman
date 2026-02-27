@@ -3,36 +3,45 @@ This script will remove the preprocessed metagenomes from the output
 directory for samples for which the pipeline is finished.
 """
 
-import argparse
-import logging
+import sys
 from pathlib import Path
 
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("remove-inputs")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 class OutputRemover:
-    def __init__(self, samples_file, output_dir, dry_run):
-        self.sample_file = Path(samples_file)
-        self.output_dir = Path(output_dir)
+    def __init__(self, samples, pipeline_outdir, per_sample, gene_catalog, dry_run):
+        self.samples = samples
+        self.pipeline_outdir = Path(pipeline_outdir)
+        self.per_sample = per_sample
+        self.gene_catalog = gene_catalog
         self.dry_run = dry_run
 
+    @property
+    def required_subdirs(self):
+        required_subdirs = ["assembly", "motus", "phanta", "genes"]
+        if self.per_sample:
+            required_subdirs.extend(["annotations", "gene_counts"])
+        if self.gene_catalog:
+            required_subdirs.extend(["gene_counts_gc"])
+        return required_subdirs
+
     def __call__(self):
-        data = pd.read_csv(args.samples_file, header=0)
-        data.set_index("sample", inplace=True)
-        samples = data.index
         to_keep = []
         to_delete = {}
         to_delete_nfiles = 0
         to_delete_size = 0
-        for sample in samples:
+        for sample in self.samples:
             keep = False
-            sample_path = Path(self.output_dir, sample)
+            sample_path = Path(self.pipeline_outdir, sample)
             if not Path(sample_path, "preprocessed_reads").exists():
                 continue
-            for subdir in ("annotations", "assembly", "gene_counts", "motus", "phanta"):
+            for subdir in self.required_subdirs:
                 if not Path(sample_path, subdir).exists():
                     keep = True
                     to_keep.append(sample)
@@ -69,22 +78,11 @@ class OutputRemover:
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser("clean_up_preprocessing.py")
-    args.add_argument(
-        "samples_file", help="path to the input file containing the list of samples"
-    )
-    args.add_argument(
-        "-o",
-        "--output_dir",
-        default="output",
-        help="path to the output directory of the pipeline",
-    )
-    args.add_argument(
-        "-n",
-        "--dry_run",
-        action="store_true",
-        help="Only list files that would get deleted.",
+    args = parse_arguments(
+        samples_file="optional",
+        pipeline_outdir=True,
+        gene_profile=True,
+        dry_run=True,
     )
 
-    args = args.parse_args()
-    OutputRemover(args.samples_file, args.output_dir, args.dry_run)()
+    OutputRemover(args.samples, args.pipeline_outdir, args.per_sample, args.dry_run)()

@@ -5,22 +5,23 @@ not been analysed yet. It also tries to avoid copying over files that are curren
 being downloaded in the source folder.
 """
 
-import argparse
-import logging
 import shutil
+import sys
 import time
 from pathlib import Path
 
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("copy-files")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 class SamplesCopier:
-    def __init__(self, samples_file, output_dir, download_dir, ignore_preprocessing):
-        self.sample_file = samples_file
-        self.output_dir = output_dir
+    def __init__(self, samples, pipeline_outdir, download_dir, ignore_preprocessing):
+        self.samples = samples
+        self.pipeline_outdir = pipeline_outdir
         self.download_dir = download_dir
         self.expected_subdirs = [
             "annotations",
@@ -34,16 +35,13 @@ class SamplesCopier:
             self.expected_subdirs.remove("preprocessed_reads")
 
     def __call__(self):
-        data = pd.read_csv(args.samples_file, header=0)
-        data.set_index("sample", inplace=True)
-        samples = data.index
         to_keep = []
-        for sample in samples:
-            if not Path(self.output_dir, sample).exists():
+        for sample in self.samples:
+            if not Path(self.pipeline_outdir, sample).exists():
                 to_keep.append(sample)
                 continue
             for subdir in self.expected_subdirs:
-                if not Path(self.output_dir, sample, subdir).exists():
+                if not Path(self.pipeline_outdir, sample, subdir).exists():
                     to_keep.append(sample)
                     logger.info(f"{sample}: missing {subdir}")
                     break
@@ -51,11 +49,10 @@ class SamplesCopier:
         # Now among the samples that have not been analysed yet,
         # we will copy over the input if available and necessary
         to_copy = []
-        for sample in to_keep:
-            for file in data.loc[sample]:
-                file = file.strip()
-                if not file:
-                    continue
+        for sample_name in to_keep:
+            sample_data = self.samples[sample_name]
+            files = sample_data["fastq1"] + sample_data["fastq2"]
+            for file in files:
                 file = Path(file)
                 if file.exists():
                     continue
@@ -76,34 +73,32 @@ class SamplesCopier:
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser("copy_downloaded_files.py")
-    args.add_argument(
-        "samples_file",
-        type=Path,
-        help="path to the input file containing the list of samples",
-    )
-    args.add_argument(
-        "download_dir",
-        type=Path,
-        help="path to the directory where the files were downloaded",
-    )
-    args.add_argument(
-        "-o",
-        "--output_dir",
-        default="output",
-        type=Path,
-        help="path to the output directory of the pipeline",
-    )
-    args.add_argument(
-        "--ignore_preprocessing",
-        action="store_true",
-        help="filter out sample even if preprocessed_reads folder is missing",
+    others = [
+        {
+            "args": ["--src"],
+            "kwargs": {
+                "type": Path,
+                "help": "source directory from which to copy the files",
+            },
+        },
+        {
+            "args": ["--ignore_preprocessing"],
+            "kwargs": {
+                "action": "store_true",
+                "help": "filter out sample even if preprocessed_reads folder is missing",
+            },
+        },
+    ]
+    args = parse_arguments(
+        samples_file="mandatory",
+        pipeline_outdir=True,
+        others=others,
     )
 
     args = args.parse_args()
     SamplesCopier(
-        args.samples_file,
-        args.output_dir,
-        args.download_dir,
+        args.samples,
+        args.pipeline_outdir,
+        args.src,
         args.ignore_preprocessing,
     )()

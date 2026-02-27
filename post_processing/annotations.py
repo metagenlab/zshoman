@@ -3,27 +3,24 @@ This script will process the output from eggnog and the gene abundances
 and generate tables containing the annotation abundances.
 """
 
-import argparse
-import logging
 import os
+import sys
 from functools import reduce
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(message)s",
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-logger = logging.getLogger("Post-processing")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 
 class Sample:
-    def __init__(self, name, input_dir):
+    def __init__(self, name, pipeline_outdir):
         self.name = name
-        self.input_dir = input_dir
+        self.pipeline_outdir = pipeline_outdir
 
     def has_all_files(self):
         return self.gene_file.exists() and self.annotation_file.exists()
@@ -31,13 +28,28 @@ class Sample:
     @property
     def gene_file(self):
         return Path(
-            self.input_dir, self.name, "gene_counts", f"{self.name}_genes_per_cell.csv"
+            self.pipeline_outdir,
+            self.name,
+            "gene_counts",
+            f"{self.name}_genes_per_cell.csv",
+        )
+
+    @property
+    def gene_file_gc(self):
+        return Path(
+            self.pipeline_outdir,
+            self.name,
+            "gene_counts_gc",
+            f"{self.name}_genes_per_cell.csv",
         )
 
     @property
     def annotation_file(self):
         return Path(
-            self.input_dir, self.name, "annotations", f"{self.name}.emapper.annotations"
+            self.pipeline_outdir,
+            self.name,
+            "annotations",
+            f"{self.name}.emapper.annotations",
         )
 
 
@@ -58,13 +70,15 @@ class AnnotationAbundanceCalculator:
         "PFAMs",
     ]
 
-    def __init__(self, samples_file, input_dir, output_dir, per_sample):
-        self.input_dir = input_dir
+    def __init__(self, samples, pipeline_outdir, output_dir, per_sample):
+        self.pipeline_outdir = pipeline_outdir
         self.output_dir = output_dir
         self.per_sample = per_sample
-        self.sample_names = self.read_samples_file(samples_file)["sample"]
+        self.sample_names = samples
 
-        self.samples = [Sample(sname, self.input_dir) for sname in self.sample_names]
+        self.samples = [
+            Sample(sname, self.pipeline_outdir) for sname in self.sample_names
+        ]
         if per_sample:
             to_skip = [el for el in self.samples if not el.has_all_files()]
             to_skip_names = [el.name for el in to_skip]
@@ -79,7 +93,9 @@ class AnnotationAbundanceCalculator:
         if not self.per_sample:
             annotations = self.load_annotations()
             abundances = reduce(
-                lambda left, right: pd.join(left, right),
+                lambda left, right: pd.merge(
+                    left, right, how="outer", left_index=True, right_index=True
+                ),
                 (self.load_abundances(sample) for sample in self.samples),
             )
 
@@ -115,11 +131,6 @@ class AnnotationAbundanceCalculator:
                     os.path.join(self.output_dir, f"{colname}.csv")
                 )
 
-    @staticmethod
-    def read_samples_file(samples_file):
-        data = pd.read_csv(args.samples_file, header=0)
-        return data
-
     def get_annotation_abundances(self, annotations, abundances, colname):
         """
         There are several annotations in a cell, coma-separated,
@@ -141,7 +152,7 @@ class AnnotationAbundanceCalculator:
     def annotation_file(self, sample):
         if sample is None:
             return os.path.join(
-                self.input_dir, "gene_catalog", "all.emapper.annotations"
+                self.pipeline_outdir, "gene_catalog", "all.emapper.annotations"
             )
         else:
             return sample.annotation_file
@@ -153,39 +164,38 @@ class AnnotationAbundanceCalculator:
         data.where(data != "-", np.nan, inplace=True)
         return data
 
-    @staticmethod
-    def load_abundances(sample):
-        return pd.read_csv(
-            sample.gene_file, delimiter=",", index_col=0, names=["gene", sample.name]
-        )
+    def load_abundances(self, sample):
+        if self.per_sample:
+            return pd.read_csv(
+                sample.gene_file,
+                delimiter=",",
+                index_col=0,
+                names=["gene", sample.name],
+            )
+        else:
+            return pd.read_csv(
+                sample.gene_file_gc,
+                delimiter=",",
+                index_col=0,
+                names=["gene", sample.name],
+            )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("annotations.py")
-    parser.add_argument("samples_file", help="path to samples csv file.")
-    parser.add_argument(
-        "-i",
-        "--input_dir",
-        default="output",
-        help="path to the output directory of the pipeline",
+    args = parse_arguments(
+        samples_file="optional",
+        pipeline_outdir=True,
+        postprocessed_dir=True,
+        gene_profile=True,
     )
-    parser.add_argument(
-        "-o",
-        "--output_dir",
-        help="path where the post-processed tables will be written to. "
-        "defaults to post_processed subdirectory in the input_dir",
-    )
-    parser.add_argument(
-        "--per_sample",
-        default=False,
-        action="store_true",
-        help="Whether the pipeline was run per sample or with the gene catalog.",
-    )
-    args = parser.parse_args()
-    output_dir = args.output_dir or os.path.join(args.input_dir, "post_processed")
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
 
+    if args.per_sample and args.gene_catalog:
+        raise NotImplementedError("gene_profile=both is not supported")
+    if not (args.per_sample or args.gene_catalog):
+        raise NotImplementedError("gene_profile=none is not supported")
     AnnotationAbundanceCalculator(
-        args.samples_file, args.input_dir, output_dir, args.per_sample
+        args.samples,
+        args.pipeline_outdir,
+        args.postprocessed_dir,
+        args.per_sample,
     )()

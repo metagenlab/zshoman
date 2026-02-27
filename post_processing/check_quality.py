@@ -4,10 +4,8 @@ and prepare summary tables and plots, notably to check
 the quality of the data and the run.
 """
 
-import argparse
-import logging
-import os
 import re
+import sys
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
@@ -16,8 +14,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("Post-processing")
+sys.path.append(str(Path(__file__).parent.parent))
+
+from utils.utils import logger
+from utils.utils import parse_arguments
 
 plt.style.use(["seaborn-v0_8", "seaborn-v0_8-muted"])
 
@@ -147,7 +147,7 @@ def check_consistency(data):
     assert data["filter_host"]["reads"] == res_reads
 
 
-def plot_preprocessing_histogram(data, output_dir, type="reads"):
+def plot_preprocessing_histogram(data, analysis_dir, type="reads"):
     initial = [el.get("trim_adapters", {}).get(type) for el in data.values()]
     initial = list(filter(None, initial))
     preprocessed = []
@@ -166,7 +166,7 @@ def plot_preprocessing_histogram(data, output_dir, type="reads"):
     plt.ylabel("# samples")
     plt.title(f"Preprocessing {type}")
     plt.legend(loc="best")
-    plt.savefig(Path(output_dir, f"{type}_preprocessing_hist.png"))
+    plt.savefig(Path(analysis_dir, f"{type}_preprocessing_hist.png"))
     plt.close()
 
 
@@ -182,7 +182,7 @@ def get_fractions(data, step, numerator, denominator):
     return np.array(res)
 
 
-def plot_preprocessing_boxplot(data, output_dir, type="reads"):
+def plot_preprocessing_boxplot(data, analysis_dir, type="reads"):
     trim_adapters = get_fractions(data, "trim_adapters", f"removed_{type}", type)
     filter_phix = get_fractions(data, "filter_phix", f"removed_{type}", type)
     filter_quality = get_fractions(data, "filter_quality", f"removed_{type}", type)
@@ -200,33 +200,19 @@ def plot_preprocessing_boxplot(data, output_dir, type="reads"):
     plt.ylabel("Fraction removed")
     plt.yscale("log")
     plt.title(f"Fraction of {type} removed during preprocessing")
-    plt.savefig(Path(output_dir, f"{type}_preprocessing_boxplot.png"))
+    plt.savefig(Path(analysis_dir, f"{type}_preprocessing_boxplot.png"))
     plt.close()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("check_quality.py")
-    parser.add_argument("samples_file", help="path to samples csv file.")
-    parser.add_argument(
-        "-i",
-        "--input_dir",
-        default="output",
-        help="path to the output directory of the pipeline",
-    )
-    parser.add_argument(
-        "-o",
-        "--output_dir",
-        default="analyses/",
-        help="path where the tables and plots should be saved to",
+    args = parse_arguments(
+        samples_file="optional",
+        pipeline_outdir=True,
+        analysis_dir=True,
     )
 
-    args = parser.parse_args()
-    if not os.path.exists(args.output_dir):
-        os.mkdir(args.output_dir)
-
-    samples = pd.read_csv(args.samples_file, header=0)["sample"]
-    logger.info(f"Found {len(samples)} samples.")
-    log_dir = Path(args.input_dir, "logs")
+    samples = args.samples
+    log_dir = Path(args.pipeline_outdir, "logs")
 
     data = defaultdict(dict)
     skipped_samples = []
@@ -263,10 +249,10 @@ if __name__ == "__main__":
         if i % 50 == 0:
             logger.info(f"Done {i}/{len(samples)}")
 
-    plot_preprocessing_histogram(data, args.output_dir, "reads")
-    plot_preprocessing_histogram(data, args.output_dir, "bases")
-    plot_preprocessing_boxplot(data, args.output_dir, "reads")
-    plot_preprocessing_boxplot(data, args.output_dir, "bases")
+    plot_preprocessing_histogram(data, args.analysis_dir, "reads")
+    plot_preprocessing_histogram(data, args.analysis_dir, "bases")
+    plot_preprocessing_boxplot(data, args.analysis_dir, "reads")
+    plot_preprocessing_boxplot(data, args.analysis_dir, "bases")
 
     # Write out the data as a table
     logs = [
@@ -286,4 +272,4 @@ if __name__ == "__main__":
         columns=[f"{log}-{key}" for log, key in columns],
         data=[[data[sample][log][key] for log, key in columns] for sample in samples],
     )
-    df.to_csv(Path(args.output_dir, "statistics.csv"))
+    df.to_csv(Path(args.analysis_dir, "statistics.csv"))
