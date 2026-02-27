@@ -150,7 +150,7 @@ def parse_arguments(
     )
     args = parser.parse_args()
 
-    if pipeline_indir and not pipeline_indir.exists():
+    if pipeline_indir and not args.pipeline_indir.exists():
         args.pipeline_indir.mkdir()
 
     if analysis_dir and not args.analysis_dir.exists():
