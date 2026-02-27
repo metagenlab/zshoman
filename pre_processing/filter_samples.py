@@ -23,6 +23,7 @@ class SamplesCleaner:
         samples_file,
         pipeline_outdir,
         per_sample,
+        gene_catalog,
         ignore_preprocessing,
         only_downloaded,
     ):
@@ -39,7 +40,7 @@ class SamplesCleaner:
         ]
         if per_sample:
             self.expected_subdirs.extend(["gene_counts", "annotations"])
-        else:
+        if gene_catalog:
             self.expected_subdirs.append("gene_counts_gc")
         if ignore_preprocessing:
             self.expected_subdirs.remove("preprocessed_reads")
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     args = parse_arguments(
         samples_file="mandatory",
         pipeline_outdir=True,
-        per_sample=True,
+        gene_profile=True,
         others=others,
     )
 
@@ -117,6 +118,7 @@ if __name__ == "__main__":
         args.samples_file,
         args.pipeline_outdir,
         args.per_sample,
+        args.gene_catalog,
         args.ignore_preprocessing,
         args.only_downloaded,
     )()
