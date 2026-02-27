@@ -15,10 +15,11 @@ from utils.utils import parse_arguments
 
 
 class OutputRemover:
-    def __init__(self, samples, pipeline_outdir, per_sample, dry_run):
+    def __init__(self, samples, pipeline_outdir, per_sample, gene_catalog, dry_run):
         self.samples = samples
         self.pipeline_outdir = Path(pipeline_outdir)
         self.per_sample = per_sample
+        self.gene_catalog = gene_catalog
         self.dry_run = dry_run
 
     @property
@@ -26,7 +27,7 @@ class OutputRemover:
         required_subdirs = ["assembly", "motus", "phanta", "genes"]
         if self.per_sample:
             required_subdirs.extend(["annotations", "gene_counts"])
-        else:
+        if self.gene_catalog:
             required_subdirs.extend(["gene_counts_gc"])
         return required_subdirs
 
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     args = parse_arguments(
         samples_file="optional",
         pipeline_outdir=True,
-        per_sample=True,
+        gene_profile=True,
         dry_run=True,
     )
 
