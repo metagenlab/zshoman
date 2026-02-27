@@ -33,7 +33,7 @@ def get_argument_parser(
         parser.add_argument("samples_file", help="path to samples csv file.", type=Path)
     elif samples_file == "optional":
         parser.add_argument(
-            "-i",
+            "-s",
             "--samples_file",
             type=Path,
             help="path to samples csv file.",
@@ -41,7 +41,7 @@ def get_argument_parser(
 
     if pipeline_indir:
         parser.add_argument(
-            "-o",
+            "-i",
             "--pipeline_indir",
             default="input",
             type=Path,
