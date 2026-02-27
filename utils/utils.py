@@ -25,7 +25,9 @@ def get_argument_parser(
     threads=False,
     others=None,
 ):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     if samples_file == "mandatory":
         parser.add_argument("samples_file", help="path to samples csv file.", type=Path)
