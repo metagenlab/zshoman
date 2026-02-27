@@ -164,10 +164,8 @@ def parse_arguments(
         args.samples = SamplesGetter(args, with_files=(samples_file == "mandatory"))()
 
     if gene_profile:
-        if args.gene_profile in ["both", "per_sample"]:
-            args.per_sample = True
-        if args.gene_profile in ["both", "gene_catalog"]:
-            args.gene_catalog = True
+        args.per_sample = args.gene_profile in ["both", "per_sample"]
+        args.gene_catalog = args.gene_profile in ["both", "gene_catalog"]
     return args
 
 
