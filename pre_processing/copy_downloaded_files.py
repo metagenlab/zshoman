@@ -53,6 +53,7 @@ class SamplesCopier:
             sample_data = self.samples[sample_name]
             files = sample_data["fastq1"] + sample_data["fastq2"]
             for file in files:
+                file = Path(file)
                 if file.exists():
                     continue
                 # If the file exists in the download folder and is finished downloading

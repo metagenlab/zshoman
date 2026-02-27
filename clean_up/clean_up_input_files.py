@@ -37,6 +37,7 @@ class InputRemover:
         for sample, sample_data in self.samples.items():
             files = []
             for file in sample_data["fastq1"] + sample_data["fastq2"]:
+                file = Path(file)
                 if file.is_file():
                     files.append(file)
             if not files:

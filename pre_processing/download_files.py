@@ -39,7 +39,7 @@ class FileDownloader:
                 continue
             sample_files = sample_data["fastq1"] + sample_data["fastq2"]
             for file in sample_files:
-                filename = file.name
+                filename = Path(file).name
                 if Path(self.input_dir, filename).is_file():
                     logger.info(f"skipping {sample_name}, {filename}")
                     continue

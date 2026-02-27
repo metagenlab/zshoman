@@ -220,9 +220,9 @@ class SamplesGetter:
             for i, row in sample_data.iterrows():
                 if not paired_end == self.is_paired_end(row):
                     raise ValueError(f"{sample_name} has paired and single end reads")
-                fastq1.append(Path(row["fastq_R1"].strip()))
+                fastq1.append(row["fastq_R1"].strip())
                 if paired_end:
-                    fastq2.append(Path(row["fastq_R2"].strip()))
+                    fastq2.append(row["fastq_R2"].strip())
 
             samples[sample_name] = {
                 "paired_end": paired_end,
