@@ -102,7 +102,9 @@ if __name__ == "__main__":
             for line in infile_handle:
                 res = [el.strip() for el in line.split(",")]
                 res[1:] = [
-                    os.path.join(args.input_dir, el.rsplit("/", 1)[-1]) if el else ""
+                    os.path.join(args.pipeline_indir, el.rsplit("/", 1)[-1])
+                    if el
+                    else ""
                     for el in res[1:]
                 ]
                 outfile_handle.write(", ".join(res) + "\n")
