@@ -44,7 +44,6 @@ if __name__ == "__main__":
         samples_file=False,
         postprocessed_dir=True,
         db_dir=True,
-        per_sample=True,
     )
 
     module_data = load_module_data(args.db_dir)
