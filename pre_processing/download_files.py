@@ -22,8 +22,8 @@ class FileDownloader:
     def __init__(self, samples, input_dir, output_dir, skip_preprocessed):
         self.input_dir = input_dir
         self.output_dir = output_dir
-        self.files = self.get_files(samples)
         self.skip_preprocessed = skip_preprocessed
+        self.files = self.get_files(samples)
         logger.info(f"Found {len(self.files)} files to download.")
         input("ctl-c to cancel")
 
