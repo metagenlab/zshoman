@@ -10,6 +10,8 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Changed
 
+- Support runs using the gene catalog in clean-up and pre- and post-processing scripts. ([#47](https://github.com/metagenlab/zshoman/pull/47)) (Niklaus Johner)
+- Adapt clean-up and pre- and post-processing scripts to new samplesheets. ([#47](https://github.com/metagenlab/zshoman/pull/47)) (Niklaus Johner)
 - Change name of output files from bbmerge to simplify downstream usage. ([#45](https://github.com/metagenlab/zshoman/pull/45)) (Niklaus Johner)
 - Avoid I/O bottleneck when restarting from output to calculate the gene catalog. ([#43](https://github.com/metagenlab/zshoman/pull/43)) (Niklaus Johner)
 - Avoid redoing contig classification and gene calling when already done. ([#41](https://github.com/metagenlab/zshoman/pull/41)) (Niklaus Johner)
