@@ -209,7 +209,7 @@ class SamplesGetter:
         samplesheet["sample"] = samplesheet["sample"].astype(str)
 
         if not self.with_files:
-            return samplesheet["sample"].unique()
+            return samplesheet["sample"].unique().tolist()
 
         grouped_by_sample = samplesheet.groupby("sample")
         samples = {}
@@ -232,8 +232,8 @@ class SamplesGetter:
         return samples
 
     def from_pipeline_outdir(self):
-        return {
+        return [
             el.name
             for el in self.pipeline_outdir.glob("*")
             if el.name not in self.to_exclude and el.is_dir()
-        }
+        ]
