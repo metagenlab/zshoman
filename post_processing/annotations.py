@@ -186,9 +186,16 @@ if __name__ == "__main__":
         samples_file="optional",
         pipeline_outdir=True,
         postprocessed_dir=True,
-        per_sample=True,
+        gene_profile=True,
     )
 
+    if args.per_sample and args.gene_catalog:
+        raise NotImplementedError("gene_profile=both is not supported")
+    if not (args.per_sample or args.gene_catalog):
+        raise NotImplementedError("gene_profile=none is not supported")
     AnnotationAbundanceCalculator(
-        args.samples, args.pipeline_outdir, args.postprocessed_dir, args.per_sample
+        args.samples,
+        args.pipeline_outdir,
+        args.postprocessed_dir,
+        args.per_sample,
     )()
