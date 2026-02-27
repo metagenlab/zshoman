@@ -168,7 +168,7 @@ def parse_arguments(
 
 
 class SamplesGetter:
-    to_exclude = ["gene_catalog", "pipeline_info"]
+    to_exclude = ["gene_catalog", "pipeline_info", "logs", "post_processed"]
 
     def __init__(self, args, with_files=False):
         self.samples_file = args.samples_file
