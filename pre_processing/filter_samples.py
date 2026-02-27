@@ -76,8 +76,8 @@ class SamplesCleaner:
 
         logger.info(f"Keeping {len(to_keep)} samples")
         outname = Path(
-            self.sample_file.parent,
-            self.sample_file.stem + "_filtered" + self.sample_file.suffix,
+            self.samples_file.parent,
+            self.samples_file.stem + "_filtered" + self.samples_file.suffix,
         )
         if outname.exists():
             logger.warning(f"{outname} exists already, interrupting")
