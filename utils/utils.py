@@ -20,7 +20,7 @@ def get_argument_parser(
     postprocessed_dir=False,
     analysis_dir=False,
     db_dir=False,
-    per_sample=False,
+    gene_profile=False,
     dry_run=False,
     threads=False,
     others=None,
@@ -105,13 +105,12 @@ def get_argument_parser(
             help="Number of parallel processes to use.",
         )
 
-    if per_sample:
+    if gene_profile:
         parser.add_argument(
-            "--per_sample",
-            default=False,
-            action="store_true",
-            help="Whether the pipeline was run per sample or with the gene catalog."
-            "Defaults to false (i.e. gene catalog)",
+            "--gene_profile",
+            default="gene_catalog",
+            choices=["gene_catalog", "per_sample", "both", "none"],
+            help="What type of gene and functional profiles were created by the pipeline.",
         )
 
     if others:
@@ -129,7 +128,7 @@ def parse_arguments(
     postprocessed_dir=False,
     analysis_dir=False,
     db_dir=False,
-    per_sample=False,
+    gene_profile=False,
     dry_run=False,
     threads=False,
     others=None,
@@ -142,7 +141,7 @@ def parse_arguments(
         postprocessed_dir=postprocessed_dir,
         analysis_dir=analysis_dir,
         db_dir=db_dir,
-        per_sample=per_sample,
+        gene_profile=gene_profile,
         dry_run=dry_run,
         threads=threads,
         others=others,
@@ -164,6 +163,11 @@ def parse_arguments(
     if samples_file:
         args.samples = SamplesGetter(args, with_files=(samples_file == "mandatory"))()
 
+    if gene_profile:
+        if args.gene_profile in ["both", "per_sample"]:
+            args.per_sample = True
+        if args.gene_profile in ["both", "gene_catalog"]:
+            args.gene_catalog = True
     return args
 
 
