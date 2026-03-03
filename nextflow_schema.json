@@ -158,6 +158,14 @@
         },
         "skip_motus": {
           "type": "boolean"
+        },
+        "skip_qc_preproc_no_singletons": {
+          "type": "boolean",
+          "default": false
+        },
+        "skip_qc_preproc_with_singletons": {
+          "type": "boolean",
+          "default": false
         }
       }
     }

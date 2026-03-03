@@ -20,6 +20,9 @@ include { MMSEQS_EASYCLUSTER as MMSEQS_EASYLINCLUST } from './modules/nf-core/mm
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_GC } from './modules/nf-core/eggnogmapper/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_SAMPLES } from './modules/nf-core/eggnogmapper/main'
+include { FASTQC as FASTQC_PREPROC_WITH_SINGLETONS } from './modules/nf-core/fastqc/main'
+include { FASTQC as FASTQC_PREPROC_NO_SINGLETONS } from './modules/nf-core/fastqc/main'
+include { FASTQC as FASTQC_RAW } from './modules/nf-core/fastqc/main'
 include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
 include { FILTERSAM as FILTERSAM_GC } from './modules/local/filtersam/main'
 include { FILTERSAM as FILTERSAM_SAMPLES } from './modules/local/filtersam/main'
@@ -73,11 +76,11 @@ workflow {
     }
 
     samples = samples.branch {
-        already_preprocessed: 
+        already_preprocessed:
             params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
-        to_preprocess: 
+        to_preprocess:
             true
-        }
+    }
 
     ///////////////////
     // PRE-PROCESSING //
@@ -95,6 +98,9 @@ workflow {
     
     // Concat multi lane samples (if any)
     concatenated = CAT_FASTQ(to_preprocess.multi, false).reads.mix(to_preprocess.single)
+
+   // Run QC on the raw concatenated reads
+    fastqc_raw = FASTQC_RAW(concatenated)
     
     // We will skip preprocessing for samples which already have the preprocessed
     // folder in the ouput
@@ -155,8 +161,22 @@ workflow {
                 )
     }))
 
+    // QC toggles: raw QC is mandatory, preprocessed checkpoints remain optional
+    do_qc_preproc_no_singletons = !params.skip_qc_preproc_no_singletons
+    do_qc_preproc_with_singletons = !params.skip_qc_preproc_with_singletons
+ 
+    if (do_qc_preproc_no_singletons) {
+        // Preprocessed QC without singletons (host-filtered paired/single reads)
+        fastqc_preproc_no_singletons = FASTQC_PREPROC_NO_SINGLETONS(hf_reads)
+    }
+    
     // Make sure we have a single fastq file for all reads per sample
     reads = FORCE_SINGLE_FASTQ(preprocessed_samples, true).reads
+    
+    if (do_qc_preproc_with_singletons) {
+        // Preprocessed QC with singletons (all final reads)
+        fastqc_preproc_with_singletons = FASTQC_PREPROC_WITH_SINGLETONS(reads)
+    }
 
     /////////////////////////
     // Taxonomic Profiling //
