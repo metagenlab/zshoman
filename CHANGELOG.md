@@ -10,6 +10,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Changed
 
+- Use metaspades instead of spades for assembly. ([#49](https://github.com/metagenlab/zshoman/pull/49)) (Niklaus Johner)
 - Support runs using the gene catalog in clean-up and pre- and post-processing scripts. ([#47](https://github.com/metagenlab/zshoman/pull/47)) (Niklaus Johner)
 - Adapt clean-up and pre- and post-processing scripts to new samplesheets. ([#47](https://github.com/metagenlab/zshoman/pull/47)) (Niklaus Johner)
 - Change name of output files from bbmerge to simplify downstream usage. ([#45](https://github.com/metagenlab/zshoman/pull/45)) (Niklaus Johner)
