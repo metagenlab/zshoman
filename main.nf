@@ -115,17 +115,9 @@ workflow {
     hf_reads = BBMAP_FILTER_HOST(qf_reads, host_index.index).reads
     hf_singletons = BBMAP_FILTER_HOST_SINGLETONS(qf_singletons, host_index.index).reads
 
-    // QC toggles: raw QC is mandatory, preprocessed checkpoints remain optional
-    do_qc_preproc_no_singletons = !params.skip_qc_preproc_no_singletons
-    do_qc_preproc_with_singletons = !params.skip_qc_preproc_with_singletons
- 
-    if (do_qc_preproc_no_singletons) {
-        // Preprocessed QC without singletons (host-filtered paired/single reads)
+    if (!params.skip_qc_preprocessed) {
+        // QC on preprocessed reads
         fastqc_preproc_no_singletons = FASTQC_PREPROC_NO_SINGLETONS(hf_reads)
-    }
-
-    if (do_qc_preproc_with_singletons) {
-        // Preprocessed QC with singletons (all final reads)
         fastqc_preproc_with_singletons = FASTQC_PREPROC_WITH_SINGLETONS(hf_singletons)
     }
 
