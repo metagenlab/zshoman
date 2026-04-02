@@ -20,8 +20,8 @@ include { MMSEQS_EASYCLUSTER as MMSEQS_EASYLINCLUST } from './modules/nf-core/mm
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_GC } from './modules/nf-core/eggnogmapper/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_SAMPLES } from './modules/nf-core/eggnogmapper/main'
-include { FASTQC as FASTQC_PREPROC_WITH_SINGLETONS } from './modules/nf-core/fastqc/main'
-include { FASTQC as FASTQC_PREPROC_NO_SINGLETONS } from './modules/nf-core/fastqc/main'
+include { FASTQC as FASTQC_PREPROC } from './modules/nf-core/fastqc/main'
+include { FASTQC as FASTQC_PREPROC_SINGLETONS } from './modules/nf-core/fastqc/main'
 include { FASTQC as FASTQC_RAW } from './modules/nf-core/fastqc/main'
 include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
 include { FILTERSAM as FILTERSAM_GC } from './modules/local/filtersam/main'
@@ -117,8 +117,8 @@ workflow {
 
     if (!params.skip_qc_preprocessed) {
         // QC on preprocessed reads
-        fastqc_preproc_no_singletons = FASTQC_PREPROC_NO_SINGLETONS(hf_reads)
-        fastqc_preproc_with_singletons = FASTQC_PREPROC_WITH_SINGLETONS(hf_singletons)
+        fastqc_preproc_no_singletons = FASTQC_PREPROC(hf_reads)
+        fastqc_preproc_with_singletons = FASTQC_PREPROC_SINGLETONS(hf_singletons)
     }
 
     // We only merge for paired-end reads
