@@ -20,6 +20,9 @@ include { MMSEQS_EASYCLUSTER as MMSEQS_EASYLINCLUST } from './modules/nf-core/mm
 include { CLASSIFY_4CAC } from './modules/local/4CAC/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_GC } from './modules/nf-core/eggnogmapper/main'
 include { EGGNOGMAPPER as EGGNOGMAPPER_SAMPLES } from './modules/nf-core/eggnogmapper/main'
+include { FASTQC as FASTQC_PREPROC } from './modules/nf-core/fastqc/main'
+include { FASTQC as FASTQC_PREPROC_SINGLETONS } from './modules/nf-core/fastqc/main'
+include { FASTQC as FASTQC_RAW } from './modules/nf-core/fastqc/main'
 include { FILTER_SCAFFOLDS } from './modules/local/filter_scaffolds/main'
 include { FILTERSAM as FILTERSAM_GC } from './modules/local/filtersam/main'
 include { FILTERSAM as FILTERSAM_SAMPLES } from './modules/local/filtersam/main'
@@ -73,11 +76,11 @@ workflow {
     }
 
     samples = samples.branch {
-        already_preprocessed: 
+        already_preprocessed:
             params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
-        to_preprocess: 
+        to_preprocess:
             true
-        }
+    }
 
     ///////////////////
     // PRE-PROCESSING //
@@ -95,6 +98,9 @@ workflow {
     
     // Concat multi lane samples (if any)
     concatenated = CAT_FASTQ(to_preprocess.multi, false).reads.mix(to_preprocess.single)
+
+   // Run QC on the raw concatenated reads
+    fastqc_raw = FASTQC_RAW(concatenated)
     
     // We will skip preprocessing for samples which already have the preprocessed
     // folder in the ouput
@@ -108,6 +114,12 @@ workflow {
 
     hf_reads = BBMAP_FILTER_HOST(qf_reads, host_index.index).reads
     hf_singletons = BBMAP_FILTER_HOST_SINGLETONS(qf_singletons, host_index.index).reads
+
+    if (!params.skip_qc_preprocessed) {
+        // QC on preprocessed reads
+        fastqc_preproc_no_singletons = FASTQC_PREPROC(hf_reads)
+        fastqc_preproc_with_singletons = FASTQC_PREPROC_SINGLETONS(hf_singletons)
+    }
 
     // We only merge for paired-end reads
     hf_reads_split = hf_reads.branch({
@@ -155,9 +167,11 @@ workflow {
                 )
     }))
 
+
+    
     // Make sure we have a single fastq file for all reads per sample
     reads = FORCE_SINGLE_FASTQ(preprocessed_samples, true).reads
-
+    
     /////////////////////////
     // Taxonomic Profiling //
     /////////////////////////

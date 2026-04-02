@@ -158,7 +158,11 @@
         },
         "skip_motus": {
           "type": "boolean"
-        }
+        },
+        "skip_qc_preprocessed": {
+          "type": "boolean",
+          "default": false
+        },
       }
     }
   },
