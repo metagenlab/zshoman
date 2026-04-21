@@ -2,3 +2,4 @@ work
 .nextflow*
 output
 db
+__pycache__
