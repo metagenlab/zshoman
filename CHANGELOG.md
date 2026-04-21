@@ -10,6 +10,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Changed
 
+- Parallelize script to copy downloaded files. ([#50](https://github.com/metagenlab/zshoman/pull/50)) (Niklaus Johner)
 - Use metaspades instead of spades for assembly. ([#49](https://github.com/metagenlab/zshoman/pull/49)) (Niklaus Johner)
 - Support runs using the gene catalog in clean-up and pre- and post-processing scripts. ([#47](https://github.com/metagenlab/zshoman/pull/47)) (Niklaus Johner)
 - Adapt clean-up and pre- and post-processing scripts to new samplesheets. ([#47](https://github.com/metagenlab/zshoman/pull/47)) (Niklaus Johner)
