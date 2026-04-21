@@ -176,7 +176,7 @@ class SamplesGetter:
 
     def __init__(self, args, with_files=False):
         self.samples_file = args.samples_file
-        self.pipeline_outdir = args.pipeline_outdir
+        self.pipeline_outdir = getattr(args, "pipeline_outdir", None)
         self.with_files = with_files
 
     def __call__(self):
