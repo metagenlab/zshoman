@@ -8,9 +8,8 @@ being downloaded in the source folder.
 import shutil
 import sys
 import time
+from multiprocessing import Pool
 from pathlib import Path
-
-import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -19,10 +18,13 @@ from utils.utils import parse_arguments
 
 
 class SamplesCopier:
-    def __init__(self, samples, pipeline_outdir, download_dir, ignore_preprocessing):
+    def __init__(
+        self, samples, pipeline_outdir, download_dir, ignore_preprocessing, threads
+    ):
         self.samples = samples
         self.pipeline_outdir = pipeline_outdir
         self.download_dir = download_dir
+        self.threads = threads
         self.expected_subdirs = [
             "annotations",
             "assembly",
@@ -67,9 +69,13 @@ class SamplesCopier:
 
         logger.info(f"Found {len(to_copy)} files to copy.")
         input("ctl-c to cancel")
-        for src, dest in to_copy:
-            logger.info(f"Copying {src} to {dest}")
-            shutil.copy2(src, dest)
+        with Pool(self.threads) as p:
+            p.map(self.copy_file, to_copy)
+
+    def copy_file(self, src_dest):
+        (src, dest) = src_dest
+        logger.info(f"Copying {src} to {dest}")
+        shutil.copy2(src, dest)
 
 
 if __name__ == "__main__":
@@ -92,6 +98,7 @@ if __name__ == "__main__":
     args = parse_arguments(
         samples_file="mandatory",
         pipeline_outdir=True,
+        threads=True,
         others=others,
     )
 
@@ -101,4 +108,5 @@ if __name__ == "__main__":
         args.pipeline_outdir,
         args.src,
         args.ignore_preprocessing,
+        args.threads,
     )()
