@@ -58,7 +58,7 @@ class SamplesCleaner:
                     break
 
         if self.only_downloaded:
-            for sample, sample_data in self.samples.itesm():
+            for sample, sample_data in self.samples.items():
                 if sample not in to_keep:
                     continue
                 remove = False
