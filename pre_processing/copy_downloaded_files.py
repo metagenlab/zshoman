@@ -102,7 +102,6 @@ if __name__ == "__main__":
         others=others,
     )
 
-    args = args.parse_args()
     SamplesCopier(
         args.samples,
         args.pipeline_outdir,
