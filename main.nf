@@ -169,9 +169,11 @@ workflow {
 
 
     
-    // Make sure we have a single fastq file for all reads per sample
-    reads = FORCE_SINGLE_FASTQ(preprocessed_samples, true).reads
-    
+    if ( (!params.skip_gene_catalog) || (!params.skip_per_sample) ) {
+        // Make sure we have a single fastq file for all reads per sample
+        reads = FORCE_SINGLE_FASTQ(preprocessed_samples, true).reads
+    }
+
     /////////////////////////
     // Taxonomic Profiling //
     /////////////////////////
