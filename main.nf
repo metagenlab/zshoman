@@ -247,6 +247,38 @@ workflow {
         filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
         assembly_stats = ASSEMBLY_STATS(filtered_assembly)
 
+        /////////////////////////////////////
+        // MAG reconstruction              //
+        /////////////////////////////////////
+
+        if (params.run_mag) {
+
+            // Join preprocessed reads with prokaryotic scaffolds
+            reads_and_contigs = preprocessed_samples
+                .join(FILTER_SCAFFOLDS.out.prok_scaffolds)
+
+            // Build BWA index for each prokaryotic assembly
+            bwa_index = BWA_INDEX_SAMPLES(FILTER_SCAFFOLDS.out.prok_scaffolds)
+
+            // Keep only reads and index for BWA_MEM input
+            bwa_input = reads_and_contigs
+                .join(bwa_index.out.index)
+                .map({ tuple(it[0], it[1], it[3]) })
+
+            // Map reads back to contigs to estimate coverage
+            mapped_bam = BWA_MEM_SAMPLES(bwa_input, true).bam
+
+            // Calculate contig coverage depth required for binning
+            depth = MAG_DEPTH(mapped_bam).depth
+
+            // Perform binning using MetaBAT2
+            bins = METABAT2(
+                FILTER_SCAFFOLDS.out.prok_scaffolds.join(depth)
+            ).bins
+
+            // Assess MAG quality
+            mag_qc = CHECKM2(bins).checkm2
+        }
 
         prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
         // We only predict eukaryotic genes if there are any (i.e. file is not empty)
