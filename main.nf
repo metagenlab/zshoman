@@ -1,6 +1,9 @@
 #!/usr/bin/env nextflow
 
 include { ASSEMBLY_STATS } from './modules/local/assembly_stats/main'
+include { MAG_DEPTH } from './modules/local/mag/depth/main'
+include { METABAT2 } from './modules/local/mag/metabat2/main'
+include { CHECKM2 } from './modules/local/mag/checkm2/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_ALIGN as BBMAP_FILTER_HOST_SINGLETONS } from './modules/nf-core/bbmap/align/main'
 include { BBMAP_BBDUK as BBDUK_FILTER_PHIX } from './modules/nf-core/bbmap/bbduk/main'
@@ -243,6 +246,7 @@ workflow {
 
         filtered_assembly = FILTER_SCAFFOLDS(scaffolds.join(contig_classification)).all_scaffolds
         assembly_stats = ASSEMBLY_STATS(filtered_assembly)
+
 
         prokaryotic_genes = PRODIGAL(FILTER_SCAFFOLDS.out.prok_scaffolds, "gff")
         // We only predict eukaryotic genes if there are any (i.e. file is not empty)
