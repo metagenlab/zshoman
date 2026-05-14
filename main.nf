@@ -262,8 +262,8 @@ workflow {
 
             // Keep only reads and index for BWA_MEM input
             bwa_input = reads_and_contigs
-                .join(bwa_index.out.index)
-                .map({ tuple(it[0], it[1], it[3]) })
+            .join(bwa_index.index)
+            .map({ tuple(it[0], it[1], it[3]) })
 
             // Map reads back to contigs to estimate coverage
             mapped_bam = BWA_MEM_SAMPLES(bwa_input, true).bam
