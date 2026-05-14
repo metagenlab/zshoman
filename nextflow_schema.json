@@ -148,9 +148,14 @@
           "default": true
         },
         "skip_assembly": {
-          "type": "boolean"
-        },
-        "skip_gene_catalog": {
+ 	  "type": "boolean"
+	},
+	"run_mag": {
+	  "type": "boolean",
+  	  "default": false,
+  	  "description": "Enable MAG reconstruction workflow after metagenomic assembly."
+	},
+	"skip_gene_catalog": {
           "type": "boolean"
         },
         "skip_phanta": {
