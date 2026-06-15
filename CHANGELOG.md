@@ -10,7 +10,8 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Changed
 
-- Avoid concatenating reads when not mapping reads to genes. ([#52](https://github.com/metagenlab/zshoman/pull/52)) (Niklaus Johner)
+- Speed up gene catalog indexing by increasing batch size and requested resources. ([#55](https://github.com/metagenlab/zshoman/pull/55)) (Niklaus Johner)
+- Avoid concatenating reads when not mapping reads to genes. ([#55](https://github.com/metagenlab/zshoman/pull/55)) (Niklaus Johner)
 - Parallelize script to copy downloaded files. ([#50](https://github.com/metagenlab/zshoman/pull/50)) (Niklaus Johner)
 - Do not skip read error correction during assembly. ([#51](https://github.com/metagenlab/zshoman/pull/51)) (Niklaus Johner)
 - Use metaspades instead of spades for assembly. ([#49](https://github.com/metagenlab/zshoman/pull/49)) (Niklaus Johner)
