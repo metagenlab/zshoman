@@ -274,14 +274,14 @@ workflow {
         )
         eukaryotic_genes_aa = eukaryotic_genes_aa.mix(
             assembly_graph_and_paths.done.filter({
-                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz"))}).map({
-                new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz"))
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz"))}).map({
+                new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz"))
             })
         )
         eukaryotic_genes_nt = eukaryotic_genes_nt.mix(
             assembly_graph_and_paths.done.filter({
-                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz"))}).map({
-                new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz"))
+                Files.exists(Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz"))}).map({
+                new Tuple (it[0],Paths.get(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz"))
             })
         )
 

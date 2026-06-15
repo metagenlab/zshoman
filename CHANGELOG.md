@@ -8,6 +8,8 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Fixed
 
+- Fix loading genes from output folder. ([#55](https://github.com/metagenlab/zshoman/pull/55)) (Niklaus Johner)
+
 ### Changed
 
 - Speed up gene catalog indexing by increasing batch size and requested resources. ([#55](https://github.com/metagenlab/zshoman/pull/55)) (Niklaus Johner)
