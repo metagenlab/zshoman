@@ -8,6 +8,14 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Fixed
 
+### Changed
+
+### Added
+
+## 1.1.0 - 2026-07-02
+
+### Fixed
+
 - Fix loading genes from output folder. ([#55](https://github.com/metagenlab/zshoman/pull/55)) (Niklaus Johner)
 
 ### Changed
