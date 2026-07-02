@@ -5,4 +5,4 @@ channels:
 dependencies:
   - samtools
   - pip:
-    - filtersam
+    - filtersam>=0.0.11

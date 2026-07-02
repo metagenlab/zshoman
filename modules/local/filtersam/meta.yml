@@ -6,7 +6,7 @@ keywords:
   - filter
   - sequence identity
 tools:
-  - phanta:
+  - filtersam:
       description: A Python tool to filter sam/bam files by percent identity or percent of matched sequences.
       homepage: https://github.com/robaina/filterSAM
       documentation: https://github.com/robaina/filterSAM

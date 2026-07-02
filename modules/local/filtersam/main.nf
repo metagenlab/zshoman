@@ -3,13 +3,13 @@ process FILTERSAM {
     label 'process_single'
 
     conda "${moduleDir}/environment.yml"
-    container "docker://metagenlab/filtersam:1.0"
+    container "docker://metagenlab/filtersam:1.1"
 
     input:
     tuple val(meta), path(aligned_reads)
 
     output:
-    tuple val(meta), path('*_filtered.sam'), emit: reads
+    tuple val(meta), path('*_filtered.bam'), emit: reads
     tuple val(meta), path("*.filtersam.log"), emit: log
 
     when:
@@ -21,7 +21,7 @@ process FILTERSAM {
     """
     filtersam \\
     $args \\
-    -o ${prefix}_filtered.sam \\
+    -o ${prefix}_filtered.bam \\
     $aligned_reads \\
     &> ${prefix}.filtersam.log
     """
