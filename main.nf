@@ -305,7 +305,13 @@ workflow {
             gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map( { it[1] } ).first()).sequences
 
             catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
-            aligned_reads = BWA_MEM_GC(reads.combine(catalog_index).map( { new Tuple(it[0], it[1], it[3]) } ), false).bam
+
+            // Skip samples for which mapping has already been done
+            to_map = reads.branch({
+                done: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "gene_counts_gc"))
+                to_do: true
+                })
+            aligned_reads = BWA_MEM_GC(to_map.to_do.combine(catalog_index).map( { new Tuple(it[0], it[1], it[3]) } ), false).bam
             filtered_reads = FILTERSAM_GC(aligned_reads).reads
             NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
 
