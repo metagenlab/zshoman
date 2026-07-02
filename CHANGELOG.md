@@ -39,6 +39,7 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
+- Add MAG reconstruction workflow. ([#54](https://github.com/metagenlab/zshoman/pull/54)) (Sedreh Nassirnia)
 - Add documentation of the output and its analysis. ([#44](https://github.com/metagenlab/zshoman/pull/44)) (Niklaus Johner)
 - Add support for phanta tables in post-processing script to merge outputs. ([#41](https://github.com/metagenlab/zshoman/pull/41)) (Niklaus Johner)
 
