@@ -63,7 +63,10 @@ Disk space usage when running the pipeline can quickly become problematic becaus
 - It breaks the `-resume` option, meaning that after a crash, the whole pipeline has to be run again.
 - It is buggy and sometimes removes files that are still required for the run, leading to random crashes in the pipeline. There is already [an issue for this](https://github.com/bentsherman/nf-boost/issues/4)
 
-We nevertheless use this plugin by default to limit disk space usage. To minimize the issue with the broken `-resume`, we have included in the pipeline ways to skip entire blocks of the pipeline if they were already run (final output files stored in the `output` directory) and allow restarting other blocks of the pipeline by loading the necessary files from the `output` folder. This is done automatically when using the `--resume_from_output` flag, allowing to skip the most time consuming steps of the pipeline when resuming.
+We nevertheless use this plugin by default to limit disk space usage with several consequences:
+1. To minimize the issue with the broken `-resume`, we have included in the pipeline ways to skip entire blocks of the pipeline if they were already run (final output files stored in the `output` directory) and allow restarting other blocks of the pipeline by loading the necessary files from the `output` folder. This is done automatically when using the `--resume_from_output` flag, allowing to skip the most time consuming steps of the pipeline when resuming.
+
+2. To avoid having the whole pipeline stop when a single process fails due to the plugin we have set the error strategy to ignore. When running the gene catalog we do not actually want to run the catalog when any task has failed before. Current strategy (will implement a check in the workflow at some point) is to first run the pipeline with `--skip_gene_catalog`, ensure that all samples have passed, and then run again without `--skip_gene_catalog` and of course with `--resume_from_output`.
 
 
 ## Running the pipeline on obelix
