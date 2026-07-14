@@ -331,7 +331,8 @@ workflow {
                 done: params.resume_from_output && outdir_abs.resolve(it[0].id).resolve("gene_counts_gc").isDirectory()
                 to_do: true
             }
-            aligned_reads = BWA_MEM_GC(to_map.to_do.combine(catalog_index).map { it -> [it[0], it[1], it[2], it[3]] }, false).bam
+            bwa_mem_gc_ch = to_map.to_do.join(catalog_index).map { it -> [it[0], it[1], it[2], it[3]] }
+            aligned_reads = BWA_MEM_GC(bwa_mem_gc_ch, false).bam
             
             filtered_reads = FILTERSAM_GC(aligned_reads).reads
             NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
