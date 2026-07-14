@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/metagenomics/master/nextflow_schema.json",
-  "title": "metagenomics pipeline parameters",
+  "$id": "https://raw.githubusercontent.com/metagenlab/zshoman/main/nextflow_schema.json",
+  "title": "metagenlab/zshoman pipeline parameters",
   "description": "Pipeline to analyse metagenomics data, including preprocessing, taxonomic profiling, assembly and functional annotation",
   "type": "object",
   "$defs": {
@@ -108,20 +108,32 @@
           "type": "string",
           "default": "null/db_mOTU/"
         },
+        "eggnog_mode": {
+          "type": "string",
+          "default": "diamond"
+        },
         "eggnog_dbdir": {
           "type": "string",
-          "default": "null/eggnog/",
+          "default": "null/eggnog",
           "format": "directory-path"
         },
         "eggnog_db": {
           "type": "string",
-          "default": "null/eggnog//eggnog.db",
+          "default": "null/eggnog/eggnog.db",
           "format": "file-path"
         },
         "eggnog_dmnd": {
           "type": "string",
-          "default": "null/eggnog//eggnog_proteins.dmnd",
+          "default": "null/eggnog/eggnog_proteins.dmnd",
           "format": "file-path"
+        },
+        "phanta_dir": {
+          "type": "string",
+          "default": "/pkg/phanta"
+        },
+        "fourcac_dir": {
+          "type": "string",
+          "default": "/pkg/4CAC/"
         },
         "reference_dir": {
           "type": "string",
@@ -148,14 +160,13 @@
           "default": true
         },
         "skip_assembly": {
- 	  "type": "boolean"
-	},
-	"run_mag": {
-	  "type": "boolean",
-  	  "default": false,
-  	  "description": "Enable MAG reconstruction workflow after metagenomic assembly."
-	},
-	"skip_gene_catalog": {
+          "type": "boolean"
+        },
+        "run_mag": {
+          "type": "boolean",
+          "description": "Enable MAG reconstruction workflow after metagenomic assembly."
+        },
+        "skip_gene_catalog": {
           "type": "boolean"
         },
         "skip_phanta": {
@@ -165,9 +176,8 @@
           "type": "boolean"
         },
         "skip_qc_preprocessed": {
-          "type": "boolean",
-          "default": false
-        },
+          "type": "boolean"
+        }
       }
     }
   },
@@ -187,15 +197,5 @@
     {
       "$ref": "#/$defs/skip"
     }
-  ],
-  "properties": {
-    "phanta_dir": {
-      "type": "string",
-      "default": "/pkg/phanta"
-    },
-    "fourcac_dir": {
-      "type": "string",
-      "default": "/pkg/4CAC/"
-    }
-  }
+  ]
 }
