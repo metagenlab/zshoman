@@ -332,6 +332,7 @@ workflow {
                 to_do: true
             }
             aligned_reads = BWA_MEM_GC(to_map.to_do.combine(catalog_index).map { it -> [it[0], it[1], it[2], it[3]] }, false).bam
+            
             filtered_reads = FILTERSAM_GC(aligned_reads).reads
             NORMALIZE_COUNTS_GC(filtered_reads.join(motus_profiles))
 
@@ -340,7 +341,7 @@ workflow {
             // Functional annotation //
             ///////////////////////////
 
-            EGGNOGMAPPER_GC(gene_catalog_aa, tuple(params.eggnog_mode, params.eggnog_db), params.eggnog_dbdir)
+            EGGNOGMAPPER_GC(gene_catalog_aa, tuple(params.eggnog_mode, params.eggnog_dmnd), params.eggnog_dbdir)
         }
 
         if (!params.skip_per_sample) {
