@@ -1,6 +1,6 @@
 process PHANTA_PROFILE {
     tag "$meta.id"
-    label 'process_single'
+    label 'process_medium'
     label 'process_medium_memory'
 
     conda "${moduleDir}/environment.yml"
