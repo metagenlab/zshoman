@@ -7,88 +7,88 @@
         "nf-core": {
           "bbmap/align": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"],
             "patch": "modules/nf-core/bbmap/align/bbmap-align.diff"
           },
           "bbmap/bbduk": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"],
             "patch": "modules/nf-core/bbmap/bbduk/bbmap-bbduk.diff"
           },
           "bbmap/bbmerge": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"],
             "patch": "modules/nf-core/bbmap/bbmerge/bbmap-bbmerge.diff"
           },
           "bbmap/index": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"]
           },
           "bwa/index": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"]
           },
           "bwa/mem": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "2fb127c8fd13de0adaa676df7169131e45c0b114",
             "installed_by": ["modules"],
             "patch": "modules/nf-core/bwa/mem/bwa-mem.diff"
           },
           "cat/cat": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "eac429d4c67ac5114ce7d4287d460d8f05fd9fab",
             "installed_by": ["modules"]
           },
           "cat/fastq": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"]
           },
           "eggnogmapper": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"]
           },
           "fastqc": {
             "branch": "master",
-            "git_sha": "3009f27c4e4b6e99da4eeebe82799e13924a4a1f",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"]
           },
           "metaeuk/easypredict": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "ad5daf951b6b4ab49fcf2547c1c1e8f0cd5a6ce7",
             "installed_by": ["modules"],
             "patch": "modules/nf-core/metaeuk/easypredict/metaeuk-easypredict.diff"
           },
           "mmseqs/easycluster": {
             "branch": "master",
-            "git_sha": "38697a933bef7041bb935c9b8374d9948ce6c794",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"],
             "patch": "modules/nf-core/mmseqs/easycluster/mmseqs-easycluster.diff"
           },
           "pigz/compress": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"]
           },
           "prodigal": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "9552f5a69a8149332b248ec9b1a7f1a2a292ec4c",
             "installed_by": ["modules"]
           },
           "seqtk/subseq": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"]
           },
           "spades": {
             "branch": "master",
-            "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
+            "git_sha": "6d46786420b4d7bc88eba026eb389c0c5535d120",
             "installed_by": ["modules"],
             "patch": "modules/nf-core/spades/spades.diff"
           }

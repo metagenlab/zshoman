@@ -3,9 +3,9 @@ process METAEUK_EASYPREDICT {
     label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/metaeuk:6.a5d39d9--pl5321hf1761c0_2':
-        'biocontainers/metaeuk:6.a5d39d9--pl5321hf1761c0_2' }"
+        'quay.io/biocontainers/metaeuk:6.a5d39d9--pl5321hf1761c0_2' }"
 
     input:
     tuple val(meta), path(fasta)
@@ -16,14 +16,14 @@ process METAEUK_EASYPREDICT {
     tuple val(meta), path("${prefix}.codon.fas"), emit: codon
     tuple val(meta), path("*.tsv")              , emit: tsv
     tuple val(meta), path("*.gff")              , emit: gff
-    path "versions.yml"                         , emit: versions
+    tuple val("${task.process}"), val('metaeuk'), eval("metaeuk | sed -n 's/.*Version: //p'"), emit: versions_metaeuk, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    prefix = task.ext.prefix ?: "${meta.id}"
+    def args = task.ext.args   ?: ''
+    prefix   = task.ext.prefix ?: "${meta.id}"
     """
     if [ -d ${database} ]; then
         ## if supplying an mmseqs database as a directory, metaeuk requires the basename of the database
@@ -38,15 +38,8 @@ process METAEUK_EASYPREDICT {
         \${DB} \\
         ${prefix} \\
         tmp/ \\
-        ${args}
-
-    # The tmp directory is huge and does not get cleaned-up by the nf-boost plugin
-    rm -rf tmp
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        metaeuk: \$(metaeuk | grep 'Version' | sed 's/metaeuk Version: //')
-    END_VERSIONS
+        ${args} \\
+        --threads ${task.cpus}
     """
 
     stub:
@@ -56,10 +49,5 @@ process METAEUK_EASYPREDICT {
     touch ${prefix}.codon.fas
     touch ${prefix}.headersMap.tsv
     touch ${prefix}.gff
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        metaeuk: \$(metaeuk | grep 'Version' | sed 's/metaeuk Version: //')
-    END_VERSIONS
     """
 }

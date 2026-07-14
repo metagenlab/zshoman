@@ -12,12 +12,20 @@
             [
                 "chr1_index_k13_c15_b1.block:md5,9f0d9a7413c1d2c16cc24555b2381163"
             ],
-            "versions.yml:md5,00db75f2ebfcae6002a29c49a476dda1"
+            {
+                "versions_bbmap": [
+                    [
+                        "BBMAP_INDEX",
+                        "bbmap",
+                        "39.18"
+                    ]
+                ]
+            }
         ],
+        "timestamp": "2026-03-11T13:51:51.779108954",
         "meta": {
-            "nf-test": "0.8.4",
-            "nextflow": "24.04.4"
-        },
-        "timestamp": "2024-08-26T14:41:14.388643"
+            "nf-test": "0.9.4",
+            "nextflow": "25.10.4"
+        }
     }
 }
