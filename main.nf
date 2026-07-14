@@ -50,7 +50,7 @@ workflow {
     // Print summary of supplied parameters
     log.info(paramsSummaryLog(workflow))
 
-    outdir_abs = file(params.outdir).toAbsolutePath().toString()
+    outdir_abs = file(params.outdir).toAbsolutePath()
 
     // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
     samples_list = samplesheetToList(params.input, "assets/schema_input.json")
@@ -76,7 +76,7 @@ workflow {
 
 
     samples = samples.branch { it ->
-        already_preprocessed: params.resume_from_output && file(outdir_abs, it[0].id, "preprocessed_reads").isDirectory()
+        already_preprocessed: params.resume_from_output && outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").isDirectory()
         to_preprocess: true
     }
 
@@ -138,16 +138,16 @@ workflow {
     preprocessed_samples = preprocessed_samples.mix(
         samples.already_preprocessed.map { it ->
             it[0].single_end
-                ? [it[0], [file(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]]
-                : [it[0], [file(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_unmerged_1.fastq.gz"), file(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_unmerged_2.fastq.gz"), file(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_merged.fastq.gz"), file(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_singletons.fastq.gz")]]
+                ? [it[0], [outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").resolve("${it[0].id}_host_filtered.fastq.gz")]]
+                : [it[0], [outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").resolve("${it[0].id}_1_unmerged.fastq.gz"), outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").resolve("${it[0].id}_2_unmerged.fastq.gz"), outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").resolve("${it[0].id}_merged.fastq.gz"), outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").resolve("${it[0].id}_host_filtered_singletons.fastq.gz")]]
         }
     )
 
     hf_reads = hf_reads.mix(
         samples.already_preprocessed.map { it ->
             it[0].single_end
-                ? [it[0], [file(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]]
-                : [it[0], [file(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1.fastq.gz"), file(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2.fastq.gz")]]
+                ? [it[0], [outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").resolve("${it[0].id}_host_filtered.fastq.gz")]]
+                : [it[0], [outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").resolve("${it[0].id}_host_filtered_1.fastq.gz"), outdir_abs.resolve(it[0].id).resolve("preprocessed_reads").resolve("${it[0].id}_host_filtered_2.fastq.gz")]]
         }
     )
 
@@ -165,7 +165,7 @@ workflow {
     if (!params.skip_motus) {
         // Skip samples for which motus has already been run and readd afterwards
         samples_motus = preprocessed_samples.branch { it ->
-            done: params.resume_from_output && file(outdir_abs, it[0].id, "motus").isDirectory()
+            done: params.resume_from_output && outdir_abs.resolve(it[0].id).resolve("motus").isDirectory()
             to_do: true
         }
 
@@ -173,7 +173,7 @@ workflow {
 
         motus_profiles = motus_profiles.mix(
             samples_motus.done.map { it ->
-                [it[0], file(outdir_abs, it[0].id, "motus", "${it[0].id}.motus")]
+                [it[0], outdir_abs.resolve(it[0].id).resolve("motus").resolve("${it[0].id}.motus")]
             }
         )
     }
@@ -181,7 +181,7 @@ workflow {
     if (!params.skip_phanta) {
         // we cannot use the singletons nor the merged reads here so he use hf_reads instead.
         PHANTA_PROFILE(
-            hf_reads.filter { it -> (!params.resume_from_output) || file(outdir_abs, it[0].id, "phanta").notExists() },
+            hf_reads.filter { it -> (!params.resume_from_output) || (!outdir_abs.resolve(it[0].id).resolve("phanta").exists()) },
             params.phanta_db,
         )
     }
@@ -193,7 +193,7 @@ workflow {
 
         // Skip samples for which spades has already been run and readd afterwards
         samples_spades = preprocessed_samples.branch { it ->
-            done: params.resume_from_output && file(outdir_abs, it[0].id, "assembly").isDirectory()
+            done: params.resume_from_output && outdir_abs.resolve(it[0].id).resolve("assembly").isDirectory()
             to_do: true
         }
 
@@ -201,17 +201,17 @@ workflow {
 
         scaffolds = SPADES.out.scaffolds.mix(
             samples_spades.done.map { it ->
-                [it[0], file(outdir_abs, it[0].id, "assembly", "${it[0].id}.scaffolds.fa.gz")]
+                [it[0], outdir_abs.resolve(it[0].id).resolve("assembly").resolve("${it[0].id}.scaffolds.fa.gz")]
             }
         )
         graphs = SPADES.out.gfa.mix(
             samples_spades.done.map { it ->
-                [it[0], file(outdir_abs, it[0].id, "assembly", "${it[0].id}.assembly.gfa.gz")]
+                [it[0], outdir_abs.resolve(it[0].id).resolve("assembly").resolve("${it[0].id}.assembly.gfa.gz")]
             }
         )
         paths = SPADES.out.assembly_paths.mix(
             samples_spades.done.map { it ->
-                [it[0], file(outdir_abs, it[0].id, "assembly", "${it[0].id}.scaffolds.paths.gz")]
+                [it[0], outdir_abs.resolve(it[0].id).resolve("assembly").resolve("${it[0].id}.scaffolds.paths.gz")]
             }
         )
 
@@ -219,7 +219,7 @@ workflow {
 
         // skip gene calling for samples for which it was already done
         assembly_graph_and_paths = assembly_graph_and_paths.branch { it ->
-            done: params.resume_from_output && file(outdir_abs, it[0].id, "genes").isDirectory()
+            done: params.resume_from_output && outdir_abs.resolve(it[0].id).resolve("genes").isDirectory()
             to_do: true
         }
 
@@ -277,30 +277,30 @@ workflow {
         // Re-add samples that had already been processed
         prokaryotic_genes_aa = prokaryotic_genes.amino_acid_fasta.mix(
             assembly_graph_and_paths.done.filter { it ->
-                file(outdir_abs, it[0].id, "genes", "${it[0].id}.faa.gz").exists()
+                outdir_abs.resolve(it[0].id).resolve("genes").resolve("${it[0].id}.faa.gz").exists()
             }.map { it ->
-                [it[0], file(outdir_abs, it[0].id, "genes", "${it[0].id}.faa.gz")]
+                [it[0], outdir_abs.resolve(it[0].id).resolve("genes").resolve("${it[0].id}.faa.gz")]
             }
         )
         prokaryotic_genes_nt = prokaryotic_genes.nucleotide_fasta.mix(
             assembly_graph_and_paths.done.filter { it ->
-                file(outdir_abs, it[0].id, "genes", "${it[0].id}.fna.gz").exists()
+                outdir_abs.resolve(it[0].id).resolve("genes").resolve("${it[0].id}.fna.gz").exists()
             }.map { it ->
-                [it[0], file(outdir_abs, it[0].id, "genes", "${it[0].id}.fna.gz")]
+                [it[0], outdir_abs.resolve(it[0].id).resolve("genes").resolve("${it[0].id}.fna.gz")]
             }
         )
         eukaryotic_genes_aa = eukaryotic_genes_aa.mix(
             assembly_graph_and_paths.done.filter { it ->
-                file(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz").exists()
+                outdir_abs.resolve(it[0].id).resolve("genes").resolve("${it[0].id}.fas.gz").exists()
             }.map { it ->
-                [it[0], file(outdir_abs, it[0].id, "genes", "${it[0].id}.fas.gz")]
+                [it[0], outdir_abs.resolve(it[0].id).resolve("genes").resolve("${it[0].id}.fas.gz")]
             }
         )
         eukaryotic_genes_nt = eukaryotic_genes_nt.mix(
             assembly_graph_and_paths.done.filter { it ->
-                file(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz").exists()
+                outdir_abs.resolve(it[0].id).resolve("genes").resolve("${it[0].id}.codon.fas.gz").exists()
             }.map { it ->
-                [it[0], file(outdir_abs, it[0].id, "genes", "${it[0].id}.codon.fas.gz")]
+                [it[0], outdir_abs.resolve(it[0].id).resolve("genes").resolve("${it[0].id}.codon.fas.gz")]
             }
         )
 
@@ -328,7 +328,7 @@ workflow {
 
             // Skip samples for which mapping has already been done
             to_map = reads.branch { it ->
-                done: params.resume_from_output && file(outdir_abs, it[0].id, "gene_counts_gc").isDirectory()
+                done: params.resume_from_output && outdir_abs.resolve(it[0].id).resolve("gene_counts_gc").isDirectory()
                 to_do: true
             }
             aligned_reads = BWA_MEM_GC(to_map.to_do.combine(catalog_index).map { it -> [it[0], it[1], it[2], it[3]] }, false).bam
@@ -352,7 +352,7 @@ workflow {
             nt_tuples = prokaryotic_genes_nt.mix(eukaryotic_genes_nt).groupTuple(size: 2, remainder: true)
             // Avoid redoing the mapping and count calculation if it was already done
             nt_tuples = nt_tuples.filter { it ->
-                (!params.resume_from_output) || file(outdir_abs, it[0].id, "gene_counts").notExists()
+                (!params.resume_from_output) || !outdir_abs.resolve(it[0].id).resolve("gene_counts").exists()
             }
             nucleotides = CAT_NT(nt_tuples).file_out
 
@@ -371,7 +371,7 @@ workflow {
             aa_tuples = prokaryotic_genes_aa.mix(eukaryotic_genes_aa).groupTuple(size: 2, remainder: true)
             // Avoid redoing the annotations if it was already done
             aa_tuples = aa_tuples.filter { it ->
-                (!params.resume_from_output) || file(outdir_abs, it[0].id, "annotations").notExists()
+                (!params.resume_from_output) || !outdir_abs.resolve(it[0].id).resolve("annotations").exists()
             }
             amino_acids = CAT_AA(aa_tuples).file_out
             EGGNOGMAPPER_SAMPLES(amino_acids, tuple(params.eggnog_mode, params.eggnog_db), params.eggnog_dbdir)
