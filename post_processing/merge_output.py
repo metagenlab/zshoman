@@ -4,12 +4,15 @@ nextflow output directory, and merge them into a single table.
 """
 
 import sys
-from functools import reduce
 from pathlib import Path
 
 import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
+
+from multiprocessing import Pool
+
+import numpy as np
 
 from utils.utils import logger
 from utils.utils import parse_arguments
@@ -19,11 +22,12 @@ class TableMerger:
     to_exclude = ["gene_catalog", "pipeline_info", "logs"]
     out_ext = "csv"
 
-    def __init__(self, samples, pipeline_outdir, postprocessed_dir, prefix):
+    def __init__(self, samples, pipeline_outdir, postprocessed_dir, prefix, threads):
         self.pipeline_outdir = Path(pipeline_outdir)
         self.postprocessed_dir = Path(postprocessed_dir)
         self.out_prefix = prefix
         self.samples = samples
+        self.threads = threads
 
     def load_table(self, sample):
         raise NotImplementedError()
@@ -41,19 +45,22 @@ class TableMerger:
         logger.info(f"Keeping {len(samples)} / {len(self.samples)} samples.")
         return samples
 
+    def merge(self, samples, how="outer"):
+        return pd.DataFrame.join(self.load_table(samples[0]), (self.load_table(sample) for sample in samples[1:]), how="outer")
+
     def __call__(self, cleanup=True):
         samples = self.filter_samples()
-        merged_table = reduce(
-            lambda left, right: pd.merge(left, right, how="outer"),
-            (self.load_table(sample) for sample in samples),
-        )
+
+        with Pool(self.threads) as p:
+            merged_tables = p.map(self.merge, np.array_split(samples, self.threads))
+        merged_table = merged_tables[0].join(merged_tables[1:], how="outer")
 
         if cleanup:
             merged_total = merged_table.loc[:, samples].sum(axis=1)
             non_zero = merged_total != 0
             merged_table = merged_table[non_zero]
 
-        merged_table.to_csv(self.outpath, index=False)
+        merged_table.to_csv(self.outpath, index=True)
 
 
 class MotusMerger(TableMerger):
@@ -63,13 +70,13 @@ class MotusMerger(TableMerger):
         return Path(self.pipeline_outdir, sample, "motus", sample + ".motus")
 
     def load_table(self, sample):
-        return pd.read_csv(self.get_table_path(sample), sep="\t", header=2)
+        return pd.read_csv(self.get_table_path(sample), sep="\t", header=2, index_col=[0, 1, 2])
 
 
 class PhantaMerger(TableMerger):
     def __call__(self, table_name, cleanup=True):
         self.table_name = table_name
-        super(PhantaMerger, self).__call__(cleanup)
+        super().__call__(cleanup)
         self.table_name = None
 
     @property
@@ -90,6 +97,7 @@ class PhantaMerger(TableMerger):
             self.get_table_path(sample),
             sep="\t",
             header=0,
+            index_col=[0, 1],
         ).rename(columns={f"{sample}_": sample})
 
 
@@ -106,7 +114,7 @@ class GeneMerger(TableMerger):
 
     def load_table(self, sample):
         return pd.read_csv(
-            self.get_table_path(sample), sep=",", header=None, names=["gene", sample]
+            self.get_table_path(sample), sep=",", header=None, names=["gene", sample], index_col=0
         )
 
 
@@ -143,17 +151,18 @@ if __name__ == "__main__":
         samples_file="optional",
         pipeline_outdir=True,
         postprocessed_dir=True,
+        threads=True,
         others=others,
     )
 
     if args.motus:
         MotusMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
         )(not args.no_cleanup)
 
     if args.phanta:
         merger = PhantaMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
         )
         merger("relative_taxonomic_abundance", not args.no_cleanup)
         merger("relative_read_abundance", not args.no_cleanup)
@@ -161,5 +170,5 @@ if __name__ == "__main__":
 
     if args.genes:
         GeneMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
         )(not args.no_cleanup)
