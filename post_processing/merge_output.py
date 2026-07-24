@@ -10,6 +10,10 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
 
+from multiprocessing import Pool
+
+import numpy as np
+
 from utils.utils import logger
 from utils.utils import parse_arguments
 
@@ -18,11 +22,12 @@ class TableMerger:
     to_exclude = ["gene_catalog", "pipeline_info", "logs"]
     out_ext = "csv"
 
-    def __init__(self, samples, pipeline_outdir, postprocessed_dir, prefix):
+    def __init__(self, samples, pipeline_outdir, postprocessed_dir, prefix, threads):
         self.pipeline_outdir = Path(pipeline_outdir)
         self.postprocessed_dir = Path(postprocessed_dir)
         self.out_prefix = prefix
         self.samples = samples
+        self.threads = threads
 
     def load_table(self, sample):
         raise NotImplementedError()
@@ -40,21 +45,29 @@ class TableMerger:
         logger.info(f"Keeping {len(samples)} / {len(self.samples)} samples.")
         return samples
 
-    def merge(self, samples, how):
-        return pd.DataFrame.join(self.load_table(samples[0]), (self.load_table(sample) for sample in samples[1:]), how="outer")
+    def merge_samples(self, samples, how="outer"):
+        logger.info(f"Merging {len(samples)} samples")
+        return pd.DataFrame.join(self.load_table(samples[0]), (self.load_table(sample) for sample in samples[1:]), how=how)
 
     def __call__(self, cleanup=True):
         samples = self.filter_samples()
 
-        merged_table =self.merge(samples, "outer")
+        with Pool(self.threads) as p:
+            merged_tables = p.map(self.merge_samples, np.array_split(samples, self.threads))
+
+        logger.info(f"Starting final merge of {len(merged_tables)} tables")
+        merged_table = merged_tables[0].join(merged_tables[1:], how="outer")
+        logger.info("Done merging")
 
         if cleanup:
+            logger.info("Starting clean-up")
             merged_total = merged_table.loc[:, samples].sum(axis=1)
             non_zero = merged_total != 0
             merged_table = merged_table[non_zero]
 
+        logger.info("Writing output")
         merged_table.to_csv(self.outpath, index=True)
-
+        logger.info("Done!")
 
 class MotusMerger(TableMerger):
     out_name = "motus"
@@ -144,17 +157,18 @@ if __name__ == "__main__":
         samples_file="optional",
         pipeline_outdir=True,
         postprocessed_dir=True,
+        threads=True,
         others=others,
     )
 
     if args.motus:
         MotusMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
         )(not args.no_cleanup)
 
     if args.phanta:
         merger = PhantaMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
         )
         merger("relative_taxonomic_abundance", not args.no_cleanup)
         merger("relative_read_abundance", not args.no_cleanup)
@@ -162,5 +176,5 @@ if __name__ == "__main__":
 
     if args.genes:
         GeneMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix
+            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
         )(not args.no_cleanup)
