@@ -4,7 +4,6 @@ nextflow output directory, and merge them into a single table.
 """
 
 import sys
-from functools import reduce
 from pathlib import Path
 
 import pandas as pd
@@ -41,19 +40,20 @@ class TableMerger:
         logger.info(f"Keeping {len(samples)} / {len(self.samples)} samples.")
         return samples
 
+    def merge(self, samples, how):
+        return pd.DataFrame.join(self.load_table(samples[0]), (self.load_table(sample) for sample in samples[1:]), how="outer")
+
     def __call__(self, cleanup=True):
         samples = self.filter_samples()
-        merged_table = reduce(
-            lambda left, right: pd.merge(left, right, how="outer"),
-            (self.load_table(sample) for sample in samples),
-        )
+
+        merged_table =self.merge(samples, "outer")
 
         if cleanup:
             merged_total = merged_table.loc[:, samples].sum(axis=1)
             non_zero = merged_total != 0
             merged_table = merged_table[non_zero]
 
-        merged_table.to_csv(self.outpath, index=False)
+        merged_table.to_csv(self.outpath, index=True)
 
 
 class MotusMerger(TableMerger):
@@ -63,13 +63,13 @@ class MotusMerger(TableMerger):
         return Path(self.pipeline_outdir, sample, "motus", sample + ".motus")
 
     def load_table(self, sample):
-        return pd.read_csv(self.get_table_path(sample), sep="\t", header=2)
+        return pd.read_csv(self.get_table_path(sample), sep="\t", header=2, index_col=[0, 1, 2])
 
 
 class PhantaMerger(TableMerger):
     def __call__(self, table_name, cleanup=True):
         self.table_name = table_name
-        super(PhantaMerger, self).__call__(cleanup)
+        super().__call__(cleanup)
         self.table_name = None
 
     @property
@@ -90,6 +90,7 @@ class PhantaMerger(TableMerger):
             self.get_table_path(sample),
             sep="\t",
             header=0,
+            index_col=[0, 1],
         ).rename(columns={f"{sample}_": sample})
 
 
@@ -106,7 +107,7 @@ class GeneMerger(TableMerger):
 
     def load_table(self, sample):
         return pd.read_csv(
-            self.get_table_path(sample), sep=",", header=None, names=["gene", sample]
+            self.get_table_path(sample), sep=",", header=None, names=["gene", sample], index_col=0
         )
 
 
