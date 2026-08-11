@@ -13,7 +13,7 @@ process BBMAP_BBDUK {
     val keep_singletons
 
     output:
-    tuple val(meta), path('*.fastq.gz') , emit: reads
+    tuple val(meta), path("*_{1,2}.fastq.gz") , emit: reads
     tuple val(meta), path('*_singletons.fastq.gz'), optional: true, emit: singletons
     tuple val(meta), path('*.log')     , emit: log
     tuple val("${task.process}"), val('bbmap'), eval('bbversion.sh | grep -v "Duplicate cpuset"'), emit: versions_bbmap, topic: versions
