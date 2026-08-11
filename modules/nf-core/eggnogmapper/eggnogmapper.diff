@@ -1,0 +1,19 @@
+Changes in component 'nf-core/eggnogmapper'
+Changes in 'eggnogmapper/main.nf':
+--- modules/nf-core/eggnogmapper/main.nf
++++ modules/nf-core/eggnogmapper/main.nf
+@@ -24,7 +24,7 @@
+     script:
+     def args          = task.ext.args   ?: ''
+     def prefix        = task.ext.prefix ?: "${meta.id}"
+-    def is_compressed = fasta.extension == '.gz'
++    def is_compressed = fasta.extension == 'gz'
+     def fasta_name    = is_compressed ? fasta.baseName : "$fasta"
+     def db_flags = ['diamond': '--dmnd_db', 'novel_fams': '--dmnd_db', 'mmseqs': '--mmseqs_db', 'hmmer': '--database', 'no_search': '--annotate_hits_table', 'cache': '--cache']
+     def db_path  = (db instanceof Path && db.isDirectory()) ? "${db}/${db.name}"                    : "$db"
+
+'modules/nf-core/eggnogmapper/environment.yml' is unchanged
+'modules/nf-core/eggnogmapper/meta.yml' is unchanged
+'modules/nf-core/eggnogmapper/tests/main.nf.test' is unchanged
+'modules/nf-core/eggnogmapper/tests/main.nf.test.snap' is unchanged
+************************************************************
