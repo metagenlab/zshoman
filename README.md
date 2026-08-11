@@ -166,8 +166,8 @@ python zshoman_dir/post_processing/correct_module_abundances.py
 
 ### Gene profiles
 
-If you have run the gene catalog, you can collect the profiles into a single table (as for the taxonomic profiles). Simply run
+If you have run the gene catalog, you can collect the profiles into a single table (as for the taxonomic profiles). As this can take a lot of tims, don't hesitate to use more than one thread:
 
 ```
-python zshoman_dir/post_processing/merge_output.py samples.csv --genes
+python zshoman_dir/post_processing/merge_output.py samples.csv --genes -t 12 --no_cleanup
 ```
