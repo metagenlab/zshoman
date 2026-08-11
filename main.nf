@@ -15,8 +15,8 @@ include { BWA_INDEX as BWA_INDEX_GC                    } from './modules/nf-core
 include { BWA_INDEX as BWA_INDEX_SAMPLES               } from './modules/nf-core/bwa/index/main'
 include { BWA_MEM as BWA_MEM_GC                        } from './modules/nf-core/bwa/mem/main'
 include { BWA_MEM as BWA_MEM_SAMPLES                   } from './modules/nf-core/bwa/mem/main'
-include { CAT_CAT as CAT_AA                            } from './modules/nf-core/cat/cat/main'
-include { CAT_CAT as CAT_NT                            } from './modules/nf-core/cat/cat/main'
+include { FIND_CONCATENATE as CAT_AA                   } from './modules/nf-core/find/concatenate/main'
+include { FIND_CONCATENATE as CAT_NT                   } from './modules/nf-core/find/concatenate/main'
 include { CAT_FASTQ                                    } from './modules/nf-core/cat/fastq/main'
 include { CAT_FASTQ as FORCE_SINGLE_FASTQ              } from './modules/nf-core/cat/fastq/main'
 include { MMSEQS_EASYCLUSTER as MMSEQS_EASYLINCLUST    } from './modules/nf-core/mmseqs/easycluster/main'
@@ -331,7 +331,7 @@ workflow {
                 done: params.resume_from_output && file("${outdir_abs}/${it[0].id}/gene_counts_gc").isDirectory()
                 to_do: true
             }
-            bwa_mem_gc_ch = to_map.to_do.combine(gene_catalog_nt).combine(catalog_index).map { it -> [it[0], it[1], it[3], it[5]]}
+            bwa_mem_gc_ch = to_map.to_do.combine(gene_catalog_nt).combine(catalog_index).map { it -> [it[0], it[1], it[3], it[5]] }
             aligned_reads = BWA_MEM_GC(bwa_mem_gc_ch, false).bam
 
             filtered_reads = FILTERSAM_GC(aligned_reads).reads
