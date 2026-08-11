@@ -45,14 +45,15 @@ class TableMerger:
         logger.info(f"Keeping {len(samples)} / {len(self.samples)} samples.")
         return samples
 
-    def merge(self, samples, how="outer"):
-        return pd.DataFrame.join(self.load_table(samples[0]), (self.load_table(sample) for sample in samples[1:]), how="outer")
+    def merge_samples(self, samples, how="outer"):
+        logger.info(f"Merging {len(samples)} samples")
+        return pd.DataFrame.join(self.load_table(samples[0]), (self.load_table(sample) for sample in samples[1:]), how=how)
 
     def __call__(self, cleanup=True):
         samples = self.filter_samples()
 
         with Pool(self.threads) as p:
-            merged_tables = p.map(self.merge, np.array_split(samples, self.threads))
+            merged_tables = p.map(self.merge_samples, np.array_split(samples, self.threads))
         merged_table = merged_tables[0].join(merged_tables[1:], how="outer")
 
         if cleanup:
