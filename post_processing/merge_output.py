@@ -54,15 +54,20 @@ class TableMerger:
 
         with Pool(self.threads) as p:
             merged_tables = p.map(self.merge_samples, np.array_split(samples, self.threads))
+
+        logger.info(f"Starting final merge of {len(merged_tables)} tables")
         merged_table = merged_tables[0].join(merged_tables[1:], how="outer")
+        logger.info("Done merging")
 
         if cleanup:
+            logger.info("Starting clean-up")
             merged_total = merged_table.loc[:, samples].sum(axis=1)
             non_zero = merged_total != 0
             merged_table = merged_table[non_zero]
 
+        logger.info("Writing output")
         merged_table.to_csv(self.outpath, index=True)
-
+        logger.info("Done!")
 
 class MotusMerger(TableMerger):
     out_name = "motus"
