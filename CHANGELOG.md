@@ -8,6 +8,8 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Fixed
 
+ - Fix KEGG module completeness calculation script. ([#63](https://github.com/metagenlab/zshoman/pull/63)) (Niklaus Johner)
+
 ### Changed
 
 ### Added
