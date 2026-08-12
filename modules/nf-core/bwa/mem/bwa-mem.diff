@@ -9,7 +9,7 @@ Changes in 'bwa/mem/main.nf':
 -    tuple val(meta) , path(reads)
 -    tuple val(meta2), path(index)
 -    tuple val(meta3), path(fasta)
-+    tuple val(meta), path(reads), path(index)
++    tuple val(meta), path(reads), path(fasta), path(index)
      val   sort_bam
  
      output:
