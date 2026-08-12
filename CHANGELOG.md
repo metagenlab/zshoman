@@ -12,6 +12,8 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Changed
 
+- Parallelize and speed-up output merging script. ([#60](https://github.com/metagenlab/zshoman/pull/60) and [#62](https://github.com/metagenlab/zshoman/pull/62)) (Niklaus Johner)
+
 ### Added
 
 ## 1.1.0 - 2026-07-02
