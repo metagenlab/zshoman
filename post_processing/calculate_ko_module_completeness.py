@@ -12,65 +12,38 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-from utils.utils import logger
+import subprocess
+import tempfile
+
 from utils.utils import parse_arguments
-
-
-def load_module_data(db_dir):
-    return pd.read_csv(Path(db_dir, "kegg_modules.csv"), index_col=0)
-
-
-def parse_definitions(module_data):
-    """
-    We prepare the definitions to be evaluable as boolean expressions.
-    The definitions include optional parts indicated by the - sign. + and
-    space represent AND, while coma represent OR.
-    Some definitions have -- which is undefined, so we simply skip them.
-    """
-    module_data["definition"] = (
-        module_data["definition"]
-        .str.replace(r"--", "", regex=True)
-        .str.replace(r"-K\d{5}", "", regex=True)
-        .str.replace(r"-\(.*?\)", "", regex=True)
-        .str.strip()
-        .str.replace(" +", " and ", regex=True)
-        .str.replace("+", " and ")
-        .str.replace(",", " or ")
-    )
-
 
 if __name__ == "__main__":
     args = parse_arguments(
         samples_file=False,
         postprocessed_dir=True,
-        db_dir=True,
     )
 
-    module_data = load_module_data(args.db_dir)
-    parse_definitions(module_data)
-
-    modules = pd.read_csv(
-        Path(args.postprocessed_dir, "KEGG_modules_corrected.csv"), index_col=0
-    )
-    modules = modules.join(module_data["definition"])
     kos = pd.read_csv(Path(args.postprocessed_dir, "KEGG_ko.csv"), index_col=0)
     kos.index = kos.index.str.replace("ko:", "")
-    for i, sample in enumerate(kos, 1):
-        if i % 100 == 0:
-            logger.info(f"Done {i}/{len(kos.columns)}")
-        kos_present = "|".join(kos.index[kos[sample] > 0])
-        if not kos_present:
-            # not a single KO present, which means all modules are already
-            # set to 0 as well
-            modules[sample] = 0
-            continue
-        complete_modules = (
-            modules["definition"]
-            .str.replace(kos_present, "True", regex=True)
-            .replace(r"K\d{5}", "False", regex=True)
-            .replace(r"M\d{5}", "False", regex=True)
-            .map(eval, na_action="ignore")
-        )
-        modules[sample] = modules[sample].where(complete_modules, 0)
-    modules.drop(columns="definition", inplace=True)
-    modules.to_csv(Path(args.postprocessed_dir, "KEGG_complete_modules.csv"))
+
+    # Create a table with samples followed by tab-delimited list of KOs present
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir=Path(tmpdir)
+        input_file = tmpdir / "kos.csv"
+        with input_file.open("w") as fout:
+            for sample, row in kos.T.iterrows():
+                fout.write(f"{sample}\t{'\t'.join(row[row != 0].index)}\n")
+
+        subprocess.call(["give_completeness", "-i", input_file, "-o", tmpdir, "--add-per-contig"])
+        completeness = pd.read_csv(tmpdir / "summary.kegg_contigs.tsv", sep="\t")
+
+        # The output table has one line for each module for each sample. We will reshape this
+        # to just keep one line per module with samples as columns
+        new_columns = ["contig"]
+        new_indices = ["module_accession", "pathway_name", "pathway_class"]
+        completeness = completeness[new_columns + new_indices + ["completeness"]].pivot(
+            columns=new_columns, index=new_indices).fillna(0)
+        # The result here has a multiindex columns ("compelteness", "sample"), so we change this
+        # to keep only the sample names
+        completeness.columns = [el[1] for el in completeness.columns]
+        completeness.to_csv(args.postprocessed_dir / "KEGG_modules_completeness.csv", index=True)
