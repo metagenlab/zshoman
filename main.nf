@@ -139,7 +139,7 @@ workflow {
         samples.already_preprocessed.map { it ->
             it[0].single_end
                 ? [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered.fastq.gz")]]
-                : [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_1_unmerged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_2_unmerged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_merged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_singletons.fastq.gz")]]
+                : [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_1.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_2_unmerged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_merged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_singletons.fastq.gz")]]
         }
     )
 
