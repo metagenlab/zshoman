@@ -139,7 +139,7 @@ workflow {
         samples.already_preprocessed.map { it ->
             it[0].single_end
                 ? [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered.fastq.gz")]]
-                : [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_1.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_2_unmerged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_merged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_singletons.fastq.gz")]]
+                : [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_1.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_2.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_merged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_singletons.fastq.gz")]]
         }
     )
 
@@ -331,6 +331,9 @@ workflow {
                 done: params.resume_from_output && file("${outdir_abs}/${it[0].id}/gene_counts_gc").isDirectory()
                 to_do: true
             }
+
+            test_ch = to_map.to_do.combine(gene_catalog_nt).combine(catalog_index)
+            test_ch.view()
             bwa_mem_gc_ch = to_map.to_do.combine(gene_catalog_nt).combine(catalog_index).map { it -> [it[0], it[1], it[3], it[5]] }
             aligned_reads = BWA_MEM_GC(bwa_mem_gc_ch, false).bam
 
