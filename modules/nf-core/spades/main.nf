@@ -19,7 +19,7 @@ process SPADES {
     tuple val(meta), path('*.gene_clusters.fa.gz'), optional:true, emit: gene_clusters
     tuple val(meta), path('*.assembly.gfa.gz')    , optional:true, emit: gfa
     tuple val(meta), path('*.scaffolds.paths.gz') , optional:true, emit: assembly_paths
-    tuple val(meta), path('*.warnings.log')         , optional:true, emit: warnings
+    tuple val(meta), path('*.warnings.log')       , optional:true, emit: warnings
     tuple val(meta), path('*.spades.log')         , emit: log
     tuple val("${task.process}"), val('spades'), eval("spades.py --version 2>&1 | sed -n 's/^.*SPAdes genome assembler v//p'"), topic: versions, emit: versions_spades
 
@@ -75,6 +75,8 @@ process SPADES {
     if [ -f warnings.log ]; then
         mv warnings.log ${prefix}.warnings.log
     fi
+
+    rm -rf tmp K21 K33 K55 K77 misc
     """
 
     stub:
