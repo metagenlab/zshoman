@@ -376,7 +376,7 @@ workflow {
                 (!params.resume_from_output) || !file("${outdir_abs}/${it[0].id}/annotations").exists()
             }
             amino_acids = CAT_AA(aa_tuples).file_out
-            EGGNOGMAPPER_SAMPLES(amino_acids, tuple(params.eggnog_mode, params.eggnog_db), params.eggnog_dbdir)
+            EGGNOGMAPPER_SAMPLES(amino_acids, tuple(params.eggnog_mode, params.eggnog_dmnd), params.eggnog_dbdir)
         }
     }
     workflow.onComplete {

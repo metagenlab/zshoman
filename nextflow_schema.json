@@ -117,11 +117,6 @@
           "default": "null/eggnog",
           "format": "directory-path"
         },
-        "eggnog_db": {
-          "type": "string",
-          "default": "null/eggnog/eggnog.db",
-          "format": "file-path"
-        },
         "eggnog_dmnd": {
           "type": "string",
           "default": "null/eggnog/eggnog_proteins.dmnd",
@@ -144,7 +139,6 @@
         "db_dir",
         "metaeuk_db",
         "eggnog_dbdir",
-        "eggnog_db",
         "eggnog_dmnd"
       ]
     },
