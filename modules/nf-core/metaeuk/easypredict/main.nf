@@ -40,6 +40,9 @@ process METAEUK_EASYPREDICT {
         tmp/ \\
         ${args} \\
         --threads ${task.cpus}
+
+    ## The tmp directory is huge and does not get cleaned-up by the nf-boost plugin
+    rm -rf tmp
     """
 
     stub:
