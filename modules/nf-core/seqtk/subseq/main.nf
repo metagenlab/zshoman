@@ -41,7 +41,8 @@ process SEQTK_SUBSEQ {
     if ("$sequences" ==~ /.+\.fq|.+\.fq.gz|.+\.fastq|.+\.fastq.gz/) {
         ext = "fq"
     }
+    def samplename = "$sequences.simpleName"
     """
-    echo "" | gzip > ${sequences}${prefix}.${ext}.gz
+    echo "" | gzip > ${samplename}_${prefix}.${ext}.gz
     """
 }
