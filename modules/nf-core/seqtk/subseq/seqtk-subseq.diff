@@ -18,6 +18,16 @@ Changes in 'seqtk/subseq/main.nf':
      """
  
      stub:
+@@ -40,7 +41,8 @@
+     if ("$sequences" ==~ /.+\.fq|.+\.fq.gz|.+\.fastq|.+\.fastq.gz/) {
+         ext = "fq"
+     }
++    def samplename = "$sequences.simpleName"
+     """
+-    echo "" | gzip > ${sequences}${prefix}.${ext}.gz
++    echo "" | gzip > ${samplename}_${prefix}.${ext}.gz
+     """
+ }
 
 'modules/nf-core/seqtk/subseq/environment.yml' is unchanged
 'modules/nf-core/seqtk/subseq/meta.yml' is unchanged
