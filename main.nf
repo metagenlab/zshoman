@@ -240,7 +240,7 @@ workflow {
             // Build BWA index for each prokaryotic assembly
             bwa_index = BWA_INDEX_SAMPLES(FILTER_SCAFFOLDS.out.prok_scaffolds)
 
-            // Keep only reads and index for BWA_MEM input
+            // Keep reads, fasta and index for BWA_MEM input
             bwa_input = reads_and_contigs
                 .join(bwa_index.index)
                 .map { it -> tuple(it[0], it[1], it[2], it[3]) }
