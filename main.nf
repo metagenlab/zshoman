@@ -241,8 +241,7 @@ workflow {
             bwa_index = BWA_INDEX_SAMPLES(FILTER_SCAFFOLDS.out.prok_scaffolds)
 
             // Keep reads, fasta and index for BWA_MEM input
-            bwa_input = reads_and_contigs
-                .join(bwa_index.index)
+            bwa_input = reads_and_contigs.join(bwa_index.index)
 
             // Map reads back to contigs to estimate coverage
             mapped_bam = BWA_MEM_SAMPLES(bwa_input, true).bam
