@@ -1,19 +1,20 @@
 name: prodigal
-description: Prodigal (Prokaryotic Dynamic Programming Genefinding Algorithm) is a
-  microbial (bacterial and archaeal) gene finding program
+description: Prodigal (Prokaryotic Dynamic Programming Genefinding Algorithm) is
+  a microbial (bacterial and archaeal) gene finding program
 keywords:
   - prokaryotes
   - gene finding
   - microbial
 tools:
   - prodigal:
-      description: Prodigal (Prokaryotic Dynamic Programming Genefinding Algorithm)
-        is a microbial (bacterial and archaeal) gene finding program
+      description: Prodigal (Prokaryotic Dynamic Programming Genefinding
+        Algorithm) is a microbial (bacterial and archaeal) gene finding program
       homepage: https://github.com/hyattpd/Prodigal
       documentation: https://github.com/hyattpd/prodigal/wiki
       tool_dev_url: https://github.com/hyattpd/Prodigal
       doi: "10.1186/1471-2105-11-119"
-      licence: ["GPL v3"]
+      licence:
+        - "GPL v3"
       identifier: biotools:prodigal
 input:
   - - meta:
@@ -24,12 +25,13 @@ input:
     - genome:
         type: file
         description: fasta/fasta.gz file
-  - - output_format:
-        type: string
-        description: Output format ("gbk"/"gff"/"sqn"/"sco")
+        ontologies: []
+  - output_format:
+      type: string
+      description: Output format ("gbk"/"gff"/"sqn"/"sco")
 output:
-  - gene_annotations:
-      - meta:
+  gene_annotations:
+    - - meta:
           type: map
           description: |
             Groovy Map containing sample information
@@ -38,8 +40,9 @@ output:
           type: file
           description: gene annotations in output_format given as input
           pattern: "*.{output_format}"
-  - nucleotide_fasta:
-      - meta:
+          ontologies: []
+  nucleotide_fasta:
+    - - meta:
           type: map
           description: |
             Groovy Map containing sample information
@@ -48,8 +51,9 @@ output:
           type: file
           description: nucleotide sequences file
           pattern: "*.{fna}"
-  - amino_acid_fasta:
-      - meta:
+          ontologies: []
+  amino_acid_fasta:
+    - - meta:
           type: map
           description: |
             Groovy Map containing sample information
@@ -58,8 +62,9 @@ output:
           type: file
           description: protein translations file
           pattern: "*.{faa}"
-  - all_gene_annotations:
-      - meta:
+          ontologies: []
+  all_gene_annotations:
+    - - meta:
           type: map
           description: |
             Groovy Map containing sample information
@@ -68,11 +73,28 @@ output:
           type: file
           description: complete starts file
           pattern: "*.{_all.txt}"
-  - versions:
-      - versions.yml:
-          type: file
-          description: File containing software versions
-          pattern: "versions.yml"
+          ontologies: []
+  versions_prodigal:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - prodigal:
+          type: string
+          description: The name of the tool
+      - prodigal -v 2>&1 | sed -n "s/Prodigal V\(.*\):.*/\1/p":
+          type: eval
+          description: The expression to obtain the version of the tool
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - prodigal:
+          type: string
+          description: The name of the tool
+      - prodigal -v 2>&1 | sed -n "s/Prodigal V\(.*\):.*/\1/p":
+          type: eval
+          description: The expression to obtain the version of the tool
 authors:
   - "@grst"
 maintainers:

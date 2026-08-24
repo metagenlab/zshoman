@@ -1,7 +1,18 @@
-Changes in module 'nf-core/spades'
+Changes in component 'nf-core/spades'
+Changes in 'spades/main.nf':
 --- modules/nf-core/spades/main.nf
 +++ modules/nf-core/spades/main.nf
-@@ -29,7 +29,7 @@
+@@ -18,7 +18,8 @@
+     tuple val(meta), path('*.transcripts.fa.gz')  , optional:true, emit: transcripts
+     tuple val(meta), path('*.gene_clusters.fa.gz'), optional:true, emit: gene_clusters
+     tuple val(meta), path('*.assembly.gfa.gz')    , optional:true, emit: gfa
+-    tuple val(meta), path('*.warnings.log')         , optional:true, emit: warnings
++    tuple val(meta), path('*.scaffolds.paths.gz') , optional:true, emit: assembly_paths
++    tuple val(meta), path('*.warnings.log')       , optional:true, emit: warnings
+     tuple val(meta), path('*.spades.log')         , emit: log
+     tuple val("${task.process}"), val('spades'), eval("spades.py --version 2>&1 | sed -n 's/^.*SPAdes genome assembler v//p'"), topic: versions, emit: versions_spades
+ 
+@@ -29,7 +30,7 @@
      def args = task.ext.args ?: ''
      def prefix = task.ext.prefix ?: "${meta.id}"
      def maxmem = task.memory.toGiga()
@@ -10,5 +21,35 @@ Changes in module 'nf-core/spades'
      def pacbio_reads = pacbio ? "--pacbio $pacbio" : ""
      def nanopore_reads = nanopore ? "--nanopore $nanopore" : ""
      def custom_hmms = hmm ? "--custom-hmms $hmm" : ""
+@@ -66,9 +67,16 @@
+         gzip -n ${prefix}.gene_clusters.fa
+     fi
+ 
++    if [ -f scaffolds.paths ]; then
++        mv scaffolds.paths ${prefix}.scaffolds.paths
++        gzip -n ${prefix}.scaffolds.paths
++    fi
++
+     if [ -f warnings.log ]; then
+         mv warnings.log ${prefix}.warnings.log
+     fi
++
++    rm -rf tmp K21 K33 K55 K77 misc
+     """
+ 
+     stub:
+@@ -78,6 +86,7 @@
+     echo "" | gzip > ${prefix}.contigs.fa.gz
+     echo "" | gzip > ${prefix}.transcripts.fa.gz
+     echo "" | gzip > ${prefix}.gene_clusters.fa.gz
++    echo "" | gzip > ${prefix}.scaffolds.paths.gz
+     echo "" | gzip > ${prefix}.assembly.gfa.gz
+     touch ${prefix}.spades.log
+     touch ${prefix}.warnings.log
 
+'modules/nf-core/spades/environment.yml' is unchanged
+'modules/nf-core/spades/meta.yml' is unchanged
+'modules/nf-core/spades/tests/nextflow.config' is unchanged
+'modules/nf-core/spades/tests/main.nf.test' is unchanged
+'modules/nf-core/spades/tests/main.nf.test.snap' is unchanged
 ************************************************************
