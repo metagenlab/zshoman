@@ -330,7 +330,9 @@ workflow {
                 done: params.resume_from_output && file("${outdir_abs}/${it[0].id}/gene_counts_gc").isDirectory()
                 to_do: true
             }
-            bwa_mem_gc_ch = to_map.to_do.combine(gene_catalog_nt).combine(catalog_index).map { it -> [it[0], it[1], it[3], it[4]] }
+            bwa_mem_gc_ch = to_map.to_do
+                .combine(gene_catalog_nt.map { it -> it[1] })
+                .combine(catalog_index.map { it -> it[1] })
             aligned_reads = BWA_MEM_GC(bwa_mem_gc_ch, false).bam
 
             filtered_reads = FILTERSAM_GC(aligned_reads).reads
