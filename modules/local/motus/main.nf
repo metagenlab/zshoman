@@ -4,8 +4,8 @@ process MOTUS_PROFILE {
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/motus:3.1.0--pyhdfd78af_0 ':
-        'biocontainers/motus:3.1.0--pyhdfd78af_0' }"
+        'https://depot.galaxyproject.org/singularity/motus:4.1.0--pyhdfd78af_0':
+        'biocontainers/motus:4.1.0--pyhdfd78af_0' }"
 
     input:
     tuple val(meta), path(reads)
@@ -22,7 +22,7 @@ process MOTUS_PROFILE {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def input = meta.single_end ? "-s ${reads[0]}" : "-f ${reads[0]} -r ${reads[1]} -s ${reads[2]},${reads[3]}"
+    def input = meta.single_end ? "-s ${reads[0]}" : "-f ${reads[0]} -r ${reads[1]} -s ${reads[2]} ${reads[3]}"
     """
     motus profile \\
         $input \\
@@ -30,8 +30,17 @@ process MOTUS_PROFILE {
         $args \\
         -o ${prefix}.motus \\
         -t $task.cpus \\
-	-db $motus_db \\
+        -db $motus_db \\
         &> ${prefix}.motus.log
+    
+    motus calc_motu \\
+        -i ${prefix}.motus.mgc
+        -n $meta.id \\
+        -o ${prefix}.motus_base_norm \\
+        -y BASE_NORM \\
+        -db $motus_db \\
+        &> ${prefix}.motus_base_norm.log
+    
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         motus: \$(motus --version)
