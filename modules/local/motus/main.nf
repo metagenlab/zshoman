@@ -4,8 +4,8 @@ process MOTUS_PROFILE {
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/motus:3.1.0--pyhdfd78af_0 ':
-        'biocontainers/motus:3.1.0--pyhdfd78af_0' }"
+        'https://depot.galaxyproject.org/singularity/motus:4.1.0--pyhdfd78af_0':
+        'biocontainers/motus:4.1.0--pyhdfd78af_0' }"
 
     input:
     tuple val(meta), path(reads)
@@ -22,7 +22,7 @@ process MOTUS_PROFILE {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def input = meta.single_end ? "-s ${reads[0]}" : "-f ${reads[0]} -r ${reads[1]} -s ${reads[2]},${reads[3]}"
+    def input = meta.single_end ? "-s ${reads[0]}" : "-f ${reads[0]} -r ${reads[1]} -s ${reads[2]} ${reads[3]}"
     """
     motus profile \\
         $input \\
