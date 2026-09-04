@@ -120,6 +120,15 @@ Here a quick overview of available scripts:
 
 The Eggnog annotation table is a bit complex to analyse as is, as it condenses many types of annotations. Notably for annotation types for which a given gene can have several annotations, the cells will contain coma-separated lists of annotations, e.g. `ko:K00336,ko:K01101`. To simplify analysis we provide a post-processing script ([annotations.py](https://github.com/metagenlab/zshoman/post_processing/annotations.py)) which will output a table for each annotation type, containing the annotation (e.g. `ko:K00336`) and its abundance in each sample.
 
+### Running eggnog-mapper 3 to get annotations from the eggnog7 database
+
+This is not yet integrated in the pipeline as there is no release of the new eggnog-mapper yet (it's still beta). Nevertheless you can run the new eggnog-mapper on your gene catalog. Here is an example on how to reanotate CIDB's gene catalog:
+
+```
+conda activate nj-eggnogmapper3
+cd /mnt/slow_storage/users/njohner/eggnog-mapper
+emapper.py -i /home/njohner/FILEARC/CBLAB/PROJECTS/CIDB/zshoman_run/output/gene_catalog/genes_all.fa.gz --data_dir /mnt/fast_storage/databases/eggnog3/ --cpu 12 --output_dir /mnt/slow_storage/users/njohner/CIDB/Analysis/DB/zshoman_run/gene_catalog/eggnog3 --output all
+```
 
 ## Standard output analysis steps
 
