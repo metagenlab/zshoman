@@ -54,6 +54,8 @@ log.info paramsSummaryLog(workflow)
 
 workflow {
     outdir_abs = Paths.get(params.outdir).toAbsolutePath().toString()
+    outdir_ppr_abs = Paths.get(params.outdir_preprocessed_reads).toAbsolutePath().toString()
+
     // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
     samples_list = samplesheetToList(params.input, "assets/schema_input.json")
 
@@ -80,7 +82,7 @@ workflow {
 
     samples = samples.branch {
         already_preprocessed:
-            params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "preprocessed_reads"))
+            params.resume_from_output && Files.isDirectory(Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads"))
         to_preprocess:
             true
     }
@@ -145,14 +147,14 @@ workflow {
             it[0].single_end ?
             new Tuple (
                 it[0],
-                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]
+                [Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]
                 ):
             new Tuple (
                 it[0],
-                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_unmerged_1.fastq.gz"),
-                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_unmerged_2.fastq.gz"),
-                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_merged.fastq.gz"),
-                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_singletons.fastq.gz")]
+                [Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads", "${it[0].id}_unmerged_1.fastq.gz"),
+                 Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads", "${it[0].id}_unmerged_2.fastq.gz"),
+                 Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads", "${it[0].id}_merged.fastq.gz"),
+                 Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_singletons.fastq.gz")]
                 )
     }))
 
@@ -161,12 +163,12 @@ workflow {
             it[0].single_end ?
             new Tuple (
                 it[0],
-                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]
+                [Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered.fastq.gz")]
                 ):
             new Tuple (
                 it[0],
-                [Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1.fastq.gz"),
-                 Paths.get(outdir_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2.fastq.gz")]
+                [Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_1.fastq.gz"),
+                 Paths.get(outdir_ppr_abs, it[0].id, "preprocessed_reads", "${it[0].id}_host_filtered_2.fastq.gz")]
                 )
     }))
 
