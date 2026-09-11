@@ -51,6 +51,7 @@ workflow {
     log.info(paramsSummaryLog(workflow))
 
     outdir_abs = file(params.outdir).toAbsolutePath().toString()
+    outdir_ppr_abs = file(params.outdir_preprocessed_reads).toUriString()
 
     // Create a new channel of metadata from the sample sheet passed to the pipeline through the --input parameter
     samples_list = samplesheetToList(params.input, "assets/schema_input.json")
@@ -76,7 +77,7 @@ workflow {
 
 
     samples = samples.branch { it ->
-        already_preprocessed: params.resume_from_output && file("${outdir_abs}/${it[0].id}/preprocessed_reads").isDirectory()
+        already_preprocessed: params.resume_from_output && file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads").isDirectory()
         to_preprocess: true
     }
 
@@ -138,16 +139,16 @@ workflow {
     preprocessed_samples = preprocessed_samples.mix(
         samples.already_preprocessed.map { it ->
             it[0].single_end
-                ? [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered.fastq.gz")]]
-                : [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_1.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_2.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_merged.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_singletons.fastq.gz")]]
+                ? [it[0], [file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered.fastq.gz")]]
+                : [it[0], [file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_1.fastq.gz"), file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_2.fastq.gz"), file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_merged.fastq.gz"), file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_singletons.fastq.gz")]]
         }
     )
 
     hf_reads = hf_reads.mix(
         samples.already_preprocessed.map { it ->
             it[0].single_end
-                ? [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered.fastq.gz")]]
-                : [it[0], [file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_1.fastq.gz"), file("${outdir_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_2.fastq.gz")]]
+                ? [it[0], [file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered.fastq.gz")]]
+                : [it[0], [file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_1.fastq.gz"), file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_2.fastq.gz")]]
         }
     )
 
