@@ -13,6 +13,7 @@ to [Common Changelog](https://common-changelog.org)
 ### Changed
 
 - Parallelize and speed-up output merging script. ([#60](https://github.com/metagenlab/zshoman/pull/60) and [#62](https://github.com/metagenlab/zshoman/pull/62)) (Niklaus Johner)
+- Use merged gene abundance file for computing annotation abundances. [#66](https://github.com/metagenlab/zshoman/pull/66)) (Niklaus Johner)
 
 ### Added
 
