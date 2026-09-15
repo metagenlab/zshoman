@@ -91,13 +91,21 @@ class AnnotationAbundanceCalculator:
 
     def __call__(self):
         if not self.per_sample:
+            logger.info("Loading annotations")
             annotations = self.load_annotations()
-            abundances = reduce(
-                lambda left, right: pd.merge(
-                    left, right, how="outer", left_index=True, right_index=True
-                ),
-                (self.load_abundances(sample) for sample in self.samples),
-            )
+            logger.info("Loading abundances")
+            if not self.output_dir / "merged_genes_per_cell.csv":
+                logger.info("Merged abundance file not found. Computing from samples.")
+                abundances = reduce(
+                    lambda left, right: pd.merge(
+                        left, right, how="outer", left_index=True, right_index=True
+                    ),
+                    (self.load_abundances(sample) for sample in self.samples),
+                )
+            else:
+                abundances = pd.read_csv(
+                    self.output_dir / "merged_genes_per_cell.csv", header=0, index_col=0
+                )
 
             for colname in self.cols_to_transform:
                 self.get_annotation_abundances(annotations, abundances, colname).to_csv(
