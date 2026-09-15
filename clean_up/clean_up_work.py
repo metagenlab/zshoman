@@ -132,7 +132,7 @@ class WorkDirCleaner:
             tot_size = sum([file.stat().st_size for file in to_delete[process]])
             n_files = len(to_delete[process])
             logger.info(f"{process}:")
-            logger.info(f"Deleting {n_files} files from {len(to_handle)} directories.")
+            logger.info(f"Deleting {n_files} files from {len(set(el.parent for el in to_delete[process]))} directories.")
             logger.info(f"This will free up {int(tot_size / 10**9)}GB.")
             print_files = input("print 20 first files? [y]/n")
             if print_files == "y":
