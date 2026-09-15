@@ -184,7 +184,7 @@ workflow {
     if (!params.skip_motus) {
         // Skip samples for which motus has already been run and readd afterwards
         samples_motus = preprocessed_samples.branch({
-            done: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "motus"))
+            done: params.resume_from_output && Files.isDirectory(Paths.get(outdir_abs, it[0].id, "motus4"))
             to_do: true
             })
 
@@ -194,7 +194,7 @@ workflow {
             samples_motus.done.map({
                 new Tuple (
                     it[0],
-                    Paths.get(outdir_abs, it[0].id, "motus", "${it[0].id}.motus")
+                    Paths.get(outdir_abs, it[0].id, "motus4", "${it[0].id}.motus")
                     )
                 })
             )
