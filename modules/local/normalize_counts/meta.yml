@@ -32,6 +32,16 @@ output:
           type: file
           description: gene counts
           pattern: "*_genes_per_cell.csv"
+  - gene_coverages:
+      - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. [ id:'test', single_end:false ]
+      - coverages:
+          type: file
+          description: gene coverage
+          pattern: "*_genes_coverage.csv"
 authors:
   - "Niklaus Johner (niklaus.johner@chuv.ch)"
 maintainers:

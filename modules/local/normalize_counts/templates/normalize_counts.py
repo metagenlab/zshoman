@@ -35,6 +35,7 @@ def main():
     stats = bamfile.get_index_statistics()
 
     counts = {}
+    coverage = {}
     for region_stat in stats:
         if region_stat.total == 0:
             continue
@@ -43,20 +44,20 @@ def main():
         # We ensure to always count on at least the min_count_length amino acids.
         contig_length = bamfile.get_reference_length(region_stat.contig)
         delta = min(int((contig_length - min_count_length) / 2), edge_correction_length)
-
-        counts[region_stat.contig] = sum(
-            map(
-                fmean,
-                bamfile.count_coverage(
-                    region_stat.contig, start=delta, stop=contig_length - delta
-                ),
-            )
+        counts = bamfile.count_coverage(
+            region_stat.contig, start=delta, stop=contig_length - delta
         )
+        base_coverage = tuple(map(sum, zip(*counts)))
+        counts[region_stat.contig] = fmean(base_coverage)
+        coverage[region_stat.contig] = 1 - (base_coverage.count(0) / len(base_coverage))
 
     with open(f"{outprefix}_genes_per_cell.csv", "w") as fout:
         fout.writelines(
             f"{key},{val / number_of_cells}\\n" for key, val in counts.items()
         )
+
+    with open(f"{outprefix}_genes_coverage.csv", "w") as fout:
+        fout.writelines(f"{key},{val}\\n" for key, val in coverage.items())
 
 
 if __name__ == "__main__":
