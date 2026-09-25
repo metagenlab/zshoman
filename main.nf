@@ -170,11 +170,11 @@ workflow {
             to_do: true
         }
 
-        motus_profiles = MOTUS_PROFILE(samples_motus.to_do, params.motus_db).motus
+        motus_profiles = MOTUS_PROFILE(samples_motus.to_do, params.motus_db).motus_base_norm
 
         motus_profiles = motus_profiles.mix(
             samples_motus.done.map { it ->
-                [it[0], file("${outdir_abs}/${it[0].id}/motus/${it[0].id}.motus")]
+                [it[0], file("${outdir_abs}/${it[0].id}/motus/${it[0].id}.motus_base_norm")]
             }
         )
     }

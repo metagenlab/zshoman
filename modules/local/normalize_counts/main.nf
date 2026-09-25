@@ -12,6 +12,7 @@ process NORMALIZE_COUNTS {
 
     output:
     tuple val(meta), path("*_genes_per_cell.csv"), emit: gene_counts
+    tuple val(meta), path("*_genes_coverage.csv"), emit: gene_coverages
 
     when:
     task.ext.when == null || task.ext.when

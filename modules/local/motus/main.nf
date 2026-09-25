@@ -13,6 +13,7 @@ process MOTUS_PROFILE {
 
     output:
     tuple val(meta), path('*.motus'), emit: motus
+    tuple val(meta), path('*.motus_base_norm'), emit: motus_base_norm
     tuple val(meta), path("*.motus.log"), emit: log
     path "versions.yml"             , emit: versions
 
@@ -34,7 +35,7 @@ process MOTUS_PROFILE {
         &> ${prefix}.motus.log
     
     motus calc_motu \\
-        -i ${prefix}.motus.mgc
+        -i ${prefix}.motus.mgc \\
         -n $meta.id \\
         -o ${prefix}.motus_base_norm \\
         -y BASE_NORM \\
