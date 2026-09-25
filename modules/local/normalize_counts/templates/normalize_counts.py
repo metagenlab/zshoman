@@ -2,11 +2,17 @@
 """
 This script counts the number of cells from the motus output and uses that
 as well as the length of the genes to normalize the gene counts.
+
+Gene counts themselves are mean coverage with edge correction (ignoring edges of
+genes when computing coverage as these are underestimated).
 """
 
 from statistics import fmean
 
 import pysam
+
+min_count_length = 10
+edge_correction_length = 30
 
 
 def main():
@@ -32,13 +38,25 @@ def main():
     for region_stat in stats:
         if region_stat.total == 0:
             continue
+
+        # We ignore the counts at the edges of the contig, as they are underestimated due to edge effects.
+        # We ensure to always count on at least the min_count_length amino acids.
+        contig_length = bamfile.get_reference_length(region_stat.contig)
+        delta = min(int((contig_length - min_count_length) / 2), edge_correction_length)
+
         counts[region_stat.contig] = sum(
-            map(fmean, bamfile.count_coverage(region_stat.contig))
+            map(
+                fmean,
+                bamfile.count_coverage(
+                    region_stat.contig, start=delta, stop=contig_length - delta
+                ),
+            )
         )
 
     with open(f"{outprefix}_genes_per_cell.csv", "w") as fout:
-        for key, val in counts.items():
-            fout.write(f"{key},{val / number_of_cells}\\n")
+        fout.writelines(
+            f"{key},{val / number_of_cells}\\n" for key, val in counts.items()
+        )
 
 
 if __name__ == "__main__":
