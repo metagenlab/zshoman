@@ -76,7 +76,9 @@ class MotusMerger(TableMerger):
         return Path(self.pipeline_outdir, sample, "motus", sample + ".motus")
 
     def load_table(self, sample):
-        return pd.read_csv(self.get_table_path(sample), sep="\t", header=2, index_col=[0, 1, 2])
+        return pd.read_csv(
+            self.get_table_path(sample), sep="\t", header=1, index_col=[0, 1]
+        )
 
 
 class PhantaMerger(TableMerger):

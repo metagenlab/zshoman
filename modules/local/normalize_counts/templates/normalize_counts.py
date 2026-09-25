@@ -14,7 +14,7 @@ def main():
     outprefix = "$task.ext.prefix" if "$task.ext.prefix" != "null" else samplename
 
     with open("$motus_profile") as handle:
-        for i in range(3):
+        for i in range(2):
             handle.readline()
 
         number_of_cells = 0
