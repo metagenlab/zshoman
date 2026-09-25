@@ -47,13 +47,19 @@ class TableMerger:
 
     def merge_samples(self, samples, how="outer"):
         logger.info(f"Merging {len(samples)} samples")
-        return pd.DataFrame.join(self.load_table(samples[0]), (self.load_table(sample) for sample in samples[1:]), how=how)
+        return pd.DataFrame.join(
+            self.load_table(samples[0]),
+            (self.load_table(sample) for sample in samples[1:]),
+            how=how,
+        )
 
     def __call__(self, cleanup=True):
         samples = self.filter_samples()
 
         with Pool(self.threads) as p:
-            merged_tables = p.map(self.merge_samples, np.array_split(samples, self.threads))
+            merged_tables = p.map(
+                self.merge_samples, np.array_split(samples, self.threads)
+            )
 
         logger.info(f"Starting final merge of {len(merged_tables)} tables")
         merged_table = merged_tables[0].join(merged_tables[1:], how="outer")
@@ -68,6 +74,7 @@ class TableMerger:
         logger.info("Writing output")
         merged_table.to_csv(self.outpath, index=True)
         logger.info("Done!")
+
 
 class MotusMerger(TableMerger):
     out_name = "motus"
@@ -122,7 +129,11 @@ class GeneMerger(TableMerger):
 
     def load_table(self, sample):
         return pd.read_csv(
-            self.get_table_path(sample), sep=",", header=None, names=["gene", sample], index_col=0
+            self.get_table_path(sample),
+            sep=",",
+            header=None,
+            names=["gene", sample],
+            index_col=0,
         )
 
 
@@ -165,12 +176,20 @@ if __name__ == "__main__":
 
     if args.motus:
         MotusMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
+            args.samples,
+            args.pipeline_outdir,
+            args.postprocessed_dir,
+            args.prefix,
+            args.threads,
         )(not args.no_cleanup)
 
     if args.phanta:
         merger = PhantaMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
+            args.samples,
+            args.pipeline_outdir,
+            args.postprocessed_dir,
+            args.prefix,
+            args.threads,
         )
         merger("relative_taxonomic_abundance", not args.no_cleanup)
         merger("relative_read_abundance", not args.no_cleanup)
@@ -178,5 +197,9 @@ if __name__ == "__main__":
 
     if args.genes:
         GeneMerger(
-            args.samples, args.pipeline_outdir, args.postprocessed_dir, args.prefix, args.threads
+            args.samples,
+            args.pipeline_outdir,
+            args.postprocessed_dir,
+            args.prefix,
+            args.threads,
         )(not args.no_cleanup)
