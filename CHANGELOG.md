@@ -18,7 +18,10 @@ to [Common Changelog](https://common-changelog.org)
 
 ### Added
 
-- Allow saving preprocessed reads in separate folder.  [#68](https://github.com/metagenlab/zshoman/pull/68)) (Niklaus Johner)
+- Allow saving preprocessed reads in separate folder. [#68](https://github.com/metagenlab/zshoman/pull/68)) (Niklaus Johner)
+- Perform edge correction when counting genes. [#69](https://github.com/metagenlab/zshoman/pull/69)) (Niklaus Johner)
+- Calculate and store gene coverage in addition to gene counts. [#69](https://github.com/metagenlab/zshoman/pull/69)) (Niklaus Johner)
+- Use mOTUs normalised base coverage instead of scaled insert counts to normalize the gene catalog. [#69](https://github.com/metagenlab/zshoman/pull/69)) (Niklaus Johner)
 
 ## 1.1.0 - 2026-07-02
 
