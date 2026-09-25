@@ -19,7 +19,7 @@ def main():
 
         number_of_cells = 0
         for line in handle:
-            number_of_cells += int(line.rsplit("\\t", 1)[-1])
+            number_of_cells += int(float(line.rsplit("\\t", 1)[-1]))
 
     pysam.sort("-o", f"{samplename}.bam", "$aligned_reads")
     pysam.index(f"{samplename}.bam")
