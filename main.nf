@@ -75,8 +75,7 @@ workflow {
             return [meta, [r1, r2]]
         }
 
-
-    samples = samples.branch { it ->
+    samples = samples.branch { it -> 
         already_preprocessed: params.resume_from_output && file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads").isDirectory()
         to_preprocess: true
     }
@@ -327,7 +326,7 @@ workflow {
 
             // Skip samples for which mapping has already been done
             to_map = reads.branch { it ->
-                done: params.resume_from_output && file("${outdir_abs}/${it[0].id}/gene_counts_gc").isDirectory()
+                done: params.resume_from_output && file("${outdir_abs}/${it[0].id}/gene_counts_gc${params.gc_postfix}").isDirectory()
                 to_do: true
             }
             bwa_mem_gc_ch = to_map.to_do
