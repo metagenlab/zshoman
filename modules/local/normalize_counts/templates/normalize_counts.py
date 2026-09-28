@@ -44,10 +44,10 @@ def main():
         # We ensure to always count on at least the min_count_length amino acids.
         contig_length = bamfile.get_reference_length(region_stat.contig)
         delta = min(int((contig_length - min_count_length) / 2), edge_correction_length)
-        counts = bamfile.count_coverage(
+        base_counts = bamfile.count_coverage(
             region_stat.contig, start=delta, stop=contig_length - delta
         )
-        base_coverage = tuple(map(sum, zip(*counts)))
+        base_coverage = tuple(map(sum, zip(*base_counts)))
         counts[region_stat.contig] = fmean(base_coverage)
         coverage[region_stat.contig] = 1 - (base_coverage.count(0) / len(base_coverage))
 
