@@ -21,6 +21,7 @@ def get_argument_parser(
     analysis_dir=False,
     db_dir=False,
     gene_profile=False,
+    gc_postfix=False,
     dry_run=False,
     threads=False,
     others=None,
@@ -114,6 +115,13 @@ def get_argument_parser(
             choices=["gene_catalog", "per_sample", "both", "none"],
             help="What type of gene and functional profiles were created by the pipeline.",
         )
+    if gc_postfix:
+        parser.add_argument(
+            "--gc_postfix",
+            default="",
+            type=str,
+            help="Gene catalog postfix.",
+        )
 
     if others:
         for other in others:
@@ -131,6 +139,7 @@ def parse_arguments(
     analysis_dir=False,
     db_dir=False,
     gene_profile=False,
+    gc_postfix=False,
     dry_run=False,
     threads=False,
     others=None,
@@ -144,6 +153,7 @@ def parse_arguments(
         analysis_dir=analysis_dir,
         db_dir=db_dir,
         gene_profile=gene_profile,
+        gc_postfix=gc_postfix,
         dry_run=dry_run,
         threads=threads,
         others=others,

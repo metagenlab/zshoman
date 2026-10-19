@@ -22,10 +22,9 @@ class TableMerger:
     to_exclude = ["gene_catalog", "pipeline_info", "logs"]
     out_ext = "csv"
 
-    def __init__(self, samples, pipeline_outdir, postprocessed_dir, prefix, threads):
+    def __init__(self, samples, pipeline_outdir, postprocessed_dir, threads):
         self.pipeline_outdir = Path(pipeline_outdir)
         self.postprocessed_dir = Path(postprocessed_dir)
-        self.out_prefix = prefix
         self.samples = samples
         self.threads = threads
 
@@ -34,9 +33,7 @@ class TableMerger:
 
     @property
     def outpath(self):
-        return Path(
-            self.postprocessed_dir, f"{self.out_prefix}_{self.out_name}.{self.out_ext}"
-        )
+        return Path(self.postprocessed_dir, f"merged_{self.out_name}.{self.out_ext}")
 
     def filter_samples(self):
         samples = [
@@ -119,11 +116,17 @@ class PhantaMerger(TableMerger):
 class GeneMerger(TableMerger):
     out_name = "genes_per_cell"
 
+    def __init__(
+        self, samples, pipeline_outdir, postprocessed_dir, prefix, gc_postfix, threads
+    ):
+        self.gc_postfix = gc_postfix
+        super().__init__(samples, pipeline_outdir, postprocessed_dir, prefix, threads)
+
     def get_table_path(self, sample):
         return Path(
             self.pipeline_outdir,
             sample,
-            "gene_counts_gc",
+            f"gene_counts_gc{self.gc_postfix}",
             sample + "_genes_per_cell.csv",
         )
 
@@ -139,10 +142,6 @@ class GeneMerger(TableMerger):
 
 if __name__ == "__main__":
     others = [
-        {
-            "args": ["--prefix"],
-            "kwargs": {"default": "merged", "help": "prefix for output file names"},
-        },
         {
             "args": ["--motus"],
             "kwargs": {"action": "store_true", "help": "merge motus table"},
@@ -170,6 +169,7 @@ if __name__ == "__main__":
         samples_file="optional",
         pipeline_outdir=True,
         postprocessed_dir=True,
+        gc_postfix=True,
         threads=True,
         others=others,
     )
@@ -179,7 +179,6 @@ if __name__ == "__main__":
             args.samples,
             args.pipeline_outdir,
             args.postprocessed_dir,
-            args.prefix,
             args.threads,
         )(not args.no_cleanup)
 
@@ -188,7 +187,6 @@ if __name__ == "__main__":
             args.samples,
             args.pipeline_outdir,
             args.postprocessed_dir,
-            args.prefix,
             args.threads,
         )
         merger("relative_taxonomic_abundance", not args.no_cleanup)
@@ -200,6 +198,6 @@ if __name__ == "__main__":
             args.samples,
             args.pipeline_outdir,
             args.postprocessed_dir,
-            args.prefix,
+            args.gc_postfix,
             args.threads,
         )(not args.no_cleanup)
