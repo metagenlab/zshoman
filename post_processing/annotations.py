@@ -16,6 +16,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils.utils import logger
 from utils.utils import parse_arguments
 
+# annotation_header_length = 19  # eggnog-mapper3
 annotation_header_length = 4  # eggnog-mapper2
 
 
