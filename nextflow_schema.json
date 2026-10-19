@@ -29,6 +29,19 @@
           "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
           "fa_icon": "fas fa-folder-open",
           "default": "output"
+        },
+        "outdir_preprocessed_reads": {
+          "type": "string",
+          "format": "directory-path",
+          "description": "The output directory where pre-processed reads will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
+          "fa_icon": "fas fa-folder-open",
+          "default": "$outdir"
+        },
+        "gc_postfix": {
+          "type": "string",
+          "description": "post-fix added to gene catalog directory names",
+          "fa_icon": "fas fa-folder-open",
+          "default": ""
         }
       }
     },
