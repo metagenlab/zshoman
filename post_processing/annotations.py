@@ -16,11 +16,14 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils.utils import logger
 from utils.utils import parse_arguments
 
+annotation_header_length = 4  # eggnog-mapper2
+
 
 class Sample:
-    def __init__(self, name, pipeline_outdir):
+    def __init__(self, name, pipeline_outdir, gc_postfix):
         self.name = name
         self.pipeline_outdir = pipeline_outdir
+        self.gc_postfix = gc_postfix
 
     def has_all_files(self):
         return self.gene_file.exists() and self.annotation_file.exists()
@@ -39,7 +42,7 @@ class Sample:
         return Path(
             self.pipeline_outdir,
             self.name,
-            "gene_counts_gc",
+            f"gene_counts_gc{self.gc_postfix}",
             f"{self.name}_genes_per_cell.csv",
         )
 
@@ -70,14 +73,16 @@ class AnnotationAbundanceCalculator:
         "PFAMs",
     ]
 
-    def __init__(self, samples, pipeline_outdir, output_dir, per_sample):
+    def __init__(self, samples, pipeline_outdir, output_dir, per_sample, gc_postfix):
         self.pipeline_outdir = pipeline_outdir
         self.output_dir = output_dir
         self.per_sample = per_sample
+        self.gc_postfix = gc_postfix
         self.sample_names = samples
 
         self.samples = [
-            Sample(sname, self.pipeline_outdir) for sname in self.sample_names
+            Sample(sname, self.pipeline_outdir, self.gc_postfix)
+            for sname in self.sample_names
         ]
         if per_sample:
             to_skip = [el for el in self.samples if not el.has_all_files()]
@@ -103,6 +108,9 @@ class AnnotationAbundanceCalculator:
                     (self.load_abundances(sample) for sample in self.samples),
                 )
             else:
+                logger.info(
+                    f"Loading abundances from {self.output_dir / 'merged_genes_per_cell.csv'}"
+                )
                 abundances = pd.read_csv(
                     self.output_dir / "merged_genes_per_cell.csv", header=0, index_col=0
                 )
@@ -160,14 +168,22 @@ class AnnotationAbundanceCalculator:
     def annotation_file(self, sample):
         if sample is None:
             return os.path.join(
-                self.pipeline_outdir, "gene_catalog", "all.emapper.annotations"
+                self.pipeline_outdir,
+                f"gene_catalog{self.gc_postfix}",
+                "all.emapper.annotations",
             )
         else:
             return sample.annotation_file
 
     def load_annotations(self, sample=None):
+        filepath = self.annotation_file(sample)
+        if sample is None:
+            logger.info(f"Loading annotations from {filepath}")
         data = pd.read_csv(
-            self.annotation_file(sample), header=4, delimiter="\t", index_col=0
+            filepath,
+            header=annotation_header_length,
+            delimiter="\t",
+            index_col=0,
         )
         data.where(data != "-", np.nan, inplace=True)
         return data
@@ -195,6 +211,7 @@ if __name__ == "__main__":
         pipeline_outdir=True,
         postprocessed_dir=True,
         gene_profile=True,
+        gc_postfix=True,
     )
 
     if args.per_sample and args.gene_catalog:
@@ -206,4 +223,5 @@ if __name__ == "__main__":
         args.pipeline_outdir,
         args.postprocessed_dir,
         args.per_sample,
+        args.gc_postfix,
     )()
