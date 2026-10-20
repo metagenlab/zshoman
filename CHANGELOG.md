@@ -23,7 +23,7 @@ to [Common Changelog](https://common-changelog.org)
 - Calculate and store gene coverage in addition to gene counts. [#69](https://github.com/metagenlab/zshoman/pull/69)) (Niklaus Johner)
 - Use mOTUs normalised base coverage instead of scaled insert counts to normalize the gene catalog. [#69](https://github.com/metagenlab/zshoman/pull/69)) (Niklaus Johner)
 - Add option to set postfix for gene catalog output. [#70](https://github.com/metagenlab/zshoman/pull/70)) (Niklaus Johner)
-
+- Add pre-run input QC script for validating sample sheets and FASTQ files. ([#75](https://github.com/metagenlab/zshoman/pull/75)) (Jazmin Valeriano)
 
 ## 1.1.0 - 2026-07-02
 
