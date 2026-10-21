@@ -318,10 +318,15 @@ workflow {
                 .collectFile { row -> ["genes.fna.gz", row[1]] }
                 .map { it -> [[id: 'all'], it] }
 
-            gene_catalog_nt = MMSEQS_EASYLINCLUST(all_nucleotides).representatives
+            if (params.resume_from_output && file("${outdir_abs}/gene_catalog${params.gc_postfix}/all_rep_seq.fasta").exists() && file("${outdir_abs}/gene_catalog${params.gc_postfix}/genes_all.fa.gz").exists()) {
+                gene_catalog_nt = channel.value([[id: 'all'], file("${outdir_abs}/gene_catalog${params.gc_postfix}/all_rep_seq.fasta")])
+                gene_catalog_aa = channel.value([[id: 'all'], file("${outdir_abs}/gene_catalog${params.gc_postfix}/genes_all.fa.gz")])
+            } else {
+                gene_catalog_nt = MMSEQS_EASYLINCLUST(all_nucleotides).representatives
+                headers = GET_HEADERS(gene_catalog_nt).headers
+                gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map { it -> it[1] }.first()).sequences
+            }
 
-            headers = GET_HEADERS(gene_catalog_nt).headers
-            gene_catalog_aa = SEQTK_SUBSEQ(all_amino_acids, headers.map { it -> it[1] }.first()).sequences
             catalog_index = BWA_INDEX_GC(gene_catalog_nt).index
 
             // Skip samples for which mapping has already been done
@@ -342,7 +347,9 @@ workflow {
             // Functional annotation //
             ///////////////////////////
 
-            EGGNOGMAPPER_GC(gene_catalog_aa, tuple(params.eggnog_mode, params.eggnog_dmnd), params.eggnog_dbdir)
+            if (params.resume_from_output && !file("${outdir_abs}/gene_catalog${params.gc_postfix}/all.emapper.annotations").exists()) {
+                EGGNOGMAPPER_GC(gene_catalog_aa, tuple(params.eggnog_mode, params.eggnog_dmnd), params.eggnog_dbdir)
+            }
         }
 
         if (!params.skip_per_sample) {
