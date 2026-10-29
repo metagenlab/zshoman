@@ -7,6 +7,7 @@ It generates a report that will be saved in the same directory as the sample she
 import gzip
 import sys
 from pathlib import Path
+from itertools import islice
 
 import pandas as pd
 from Bio.SeqIO.QualityIO import FastqGeneralIterator
@@ -20,34 +21,33 @@ MAX_READS = 1000 # This is the number of reads scanned per FASTQ
 
 def check_file(path):
     """Check that a file path is valid, exists and is not empty"""
-    path= Path(path)
+    path = Path(path)
     return path.exists() and path.stat().st_size > 0
 
 def sample_fastq_stats(path, max_reads=MAX_READS):
     """Check the first reads of a FASTQ and collect fast statistics"""
-    n_reads = 0
-    total_bases = 0
 
     # Get mean length for the first reads up until MAX_READS
     try:
-        with gzip.open(path, "rt") as handle:
-            for _, sequence, _ in FastqGeneralIterator(handle):
-                if n_reads >= max_reads:
-                    break
+        path = Path(path)
+        opener = gzip.open if path.suffix.lower() == ".gz" else open
 
-                length = len(sequence)
-
-                n_reads += 1
-                total_bases += length
-
-    except (OSError, EOFError, ValueError):
+        with opener(path, "rt") as handle:
+            lengths = [
+                len(sequence)
+                for _, sequence, _ in islice(FastqGeneralIterator(handle), max_reads)
+            ]
+    except (TypeError, OSError, EOFError, ValueError):
+        return None
+    
+    if not lengths:
         return None
 
-    mean_length = total_bases / n_reads if n_reads > 0 else 0
-
     return {
-        "reads_checked": n_reads,
-        "mean_length": mean_length,
+        "reads_checked": len(lengths),
+        "mean_length": sum(lengths) / len(lengths),
+        "min_length": min(lengths),
+        "max_length": max(lengths),
     }
 
 def check_sample(sample, lane_index, r1, r2):
