@@ -8,7 +8,6 @@ import gzip
 import sys
 from pathlib import Path
 from itertools import islice
-from pprint import pprint
 
 import pandas as pd
 from Bio.SeqIO.QualityIO import FastqGeneralIterator
