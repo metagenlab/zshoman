@@ -8,6 +8,7 @@ import gzip
 import sys
 from pathlib import Path
 from itertools import islice
+from pprint import pprint
 
 import pandas as pd
 from Bio.SeqIO.QualityIO import FastqGeneralIterator
@@ -18,11 +19,6 @@ from utils.utils import logger
 from utils.utils import parse_arguments
 
 MAX_READS = 1000 # This is the number of reads scanned per FASTQ
-
-def check_file(path):
-    """Check that a file path is valid, exists and is not empty"""
-    path = Path(path)
-    return path.exists() and path.stat().st_size > 0
 
 def sample_fastq_stats(path, max_reads=MAX_READS):
     """Check the first reads of a FASTQ and collect fast statistics"""
@@ -50,199 +46,184 @@ def sample_fastq_stats(path, max_reads=MAX_READS):
         "max_length": max(lengths),
     }
 
-def check_sample(sample, lane_index, r1, r2):
-    """Run input QC checks for one paired-end sample."""
-
-    logger.info(f"Checking {sample}, lane {lane_index}")
-
-    #Check that both files exist
-    r1_exists = check_file(r1)
-    r2_exists = check_file(r2)
-
+def qc_file(path):
+    """Check one FASTQ file and return its QC result."""
     result = {
-        "sample": sample,
-        "lane_index": lane_index,
-        "R1_exists": r1_exists,
-        "R2_exists": r2_exists,
-        "R1_readable": None,
-        "R2_readable": None,
-        "R1_size_mb": None,
-        "R2_size_mb": None,
-        "R1_reads_checked": None,
-        "R2_reads_checked": None,
-        "R1_mean_length": None,
-        "R2_mean_length": None,
-        "status": "PASS"
+        "path": str(path),
+        "size_mb": None,
+        "reads_checked": None,
+        "mean_length": None,
+        "min_length": None,
+        "max_length": None,
+        "status": None,
+        "error": None,
     }
 
-    # Check and register size of the files in mb
-    if r1_exists:
-        result["R1_size_mb"] = Path(r1).stat().st_size / 1_000_000
-    if r2_exists:
-        result["R2_size_mb"] = Path(r2).stat().st_size / 1_000_000
+    try:
+        path = Path(path)
+        size_bytes = path.stat().st_size
+    except (TypeError, ValueError) as exc:
+        result.update(status="INVALID_PATH", error=str(exc))
+        return result
+    except FileNotFoundError as exc:
+        result.update(status="MISSING_FILE", error=str(exc))
+        return result
+    except OSError as exc:
+        result.update(status="UNREADABLE_FILE", error=str(exc))
+        return result
 
-    # Sample R1
-    if r1_exists:
-        r1_stats = sample_fastq_stats(r1)
-        result["R1_readable"] = r1_stats is not None
+    result["size_mb"] = size_bytes / 1_000_000
 
-        if r1_stats is not None:
-            result["R1_reads_checked"] = r1_stats["reads_checked"]
-            result["R1_mean_length"] = r1_stats["mean_length"]
+    if size_bytes == 0:
+        result.update(status="EMPTY_FILE", error="File has 0 bytes")
+        return result
+    
+    stats = sample_fastq_stats(path)
 
-    # Sample R2
-    if r2_exists:
-        r2_stats = sample_fastq_stats(r2)
-        result["R2_readable"] = r2_stats is not None
-
-        if r2_stats is not None:
-            result["R2_reads_checked"] = r2_stats["reads_checked"]
-            result["R2_mean_length"] = r2_stats["mean_length"]
-
-    # Assign status
-    if not r1_exists or not r2_exists:
-        result["status"] = "MISSING_FILE"
-
-    elif not result["R1_readable"] or not result["R2_readable"]:
-        result["status"] = "UNREADABLE_FASTQ"
-
+    if stats is None:
+        result.update(
+            status="UNREADABLE_FASTQ",
+            error="Could not read FASTQ records from the sampled portion",
+        )
+        return result
+    
+    result.update(stats)
+    result["status"] = "PASS"
     return result
 
-def run_qc(samples_file):
-    """Run input QC for all fastq pairs in the sample sheet (lane level)."""
-    samples = pd.read_csv(samples_file)
 
-    # Check no paths are duplicated for R1 or R2
-    duplicate_r1 = samples["fastq_R1"].duplicated(keep=False)
-    duplicate_r2 = samples["fastq_R2"].duplicated(keep=False)
-
-    duplicate_r1_paths = (
-        samples.loc[duplicate_r1, "fastq_R1"]
-        .drop_duplicates()
-        .tolist()
-        )
-
-    duplicate_r2_paths = (
-        samples.loc[duplicate_r2,"fastq_R2"]
-        .drop_duplicates()
-        .tolist()
-        )
-
-    # Check whether we have the same number of lanes in all samples 
-    samples["lane_index"] = samples.groupby("sample").cumcount() + 1 
-    lane_counts = samples.groupby("sample").size()
-
-    warnings = []
-
-    if lane_counts.nunique() > 1:
-        warnings.append(
-            "Some sample(s) have a different number of lanes; see Sample-level QC"
-        )
-
-    # Run lane-level QC
+def collect_file_qc(samples):
+    """Run QC on every file and attach its sample information"""
     results = []
+    
+    for sample_name, sample_data in samples.items():
+        for read_direction, paths in(
+            ("R1", sample_data["fastq1"]),
+            ("R2", sample_data["fastq2"]),
+        ):
+            for path in paths:
+                logger.info(f"Checking {sample_name}, {read_direction}: {path}")
 
-    for _, row in samples.iterrows():
-        result = check_sample(
-            row["sample"],
-            row["lane_index"],
-            row["fastq_R1"],
-            row["fastq_R2"],
-        )
-        results.append(result)
+                result = qc_file(path)
+                result.update(
+                    sample=sample_name,
+                    paired_end=sample_data["paired_end"],
+                    read_direction=read_direction,
+                )
+                results.append(result)
 
-    qc = pd.DataFrame(results)
-
-    # Aggregate lane results per sample
-
-    qc["lane_pass"] = qc["status"] == "PASS"
+    return pd.DataFrame(results)
+    
+def run_qc(samples):
+    """Run file QC and summarize results by sample."""
+    qc = collect_file_qc(samples)
+    qc["file_pass"] = qc["status"] == "PASS"
 
     sample_summary = (
         qc.groupby("sample", as_index=False)
         .agg(
-            total_R1_size_mb=("R1_size_mb","sum"),
-            total_R2_size_mb=("R2_size_mb","sum"),
-            n_lanes=("lane_index","count"),
-            all_lanes_pass=("lane_pass","all"),
+            paired_end=("paired_end", "first"),
+            n_files=("path", "count"),
+            total_size_mb=("size_mb", "sum"),
+            all_files_pass=("file_pass", "all"),
         )
     )
 
-    sample_summary["total_R1_size_mb"] = sample_summary["total_R1_size_mb"].round(1)
-    sample_summary["total_R2_size_mb"] = sample_summary["total_R2_size_mb"].round(1)
+    sample_summary["total_size_mb"] = sample_summary["total_size_mb"].round(1)
+    sample_summary["status"] = sample_summary["all_files_pass"].map(
+        {True: "PASS", False: "FAIL"}
+    )
 
-    sample_summary["status"] = sample_summary["all_lanes_pass"].map(
-        {True: "PASS", False: "CHECK_LANES"})
+    duplicate_paths = (
+        qc.loc[qc["path"].duplicated(keep=False), "path"]
+        .drop_duplicates()
+        .tolist()
+    )
 
-    # Reorder columns 
-    sample_summary = sample_summary[
-        [
-            "sample",
-            "n_lanes",
-            "total_R1_size_mb",
-            "total_R2_size_mb",
-            "all_lanes_pass",
-            "status",
-        ]
-    ]
-
-    # Summarize for the whole sample list
-    sample_sheet_summary = {
-    "samples_in_sheet": samples["sample"].nunique(),
-    "fastq_pairs_in_sheet": len(samples),
-    "all_samples_same_n_lanes": lane_counts.nunique() == 1,
-    "duplicate_R1_files": len(duplicate_r1_paths),
-    "duplicate_R2_files": len(duplicate_r2_paths),
-    "duplicated_R1_paths": duplicate_r1_paths,
-    "duplicated_R2_paths": duplicate_r2_paths,
-    "warnings": warnings,
+    overall_summary = {
+        "n_samples": len(samples),
+        "n_files": len(qc),
+        "failed_files": int((~qc["file_pass"]).sum()),
+        "duplicate_paths": duplicate_paths,
+        "status": (
+            "PASS"
+            if qc["file_pass"].all() and not duplicate_paths
+            else "FAIL"
+        ),
     }
 
-    # Add file-level problems to high-level summary
-    sample_sheet_summary["missing_files"] = int(
-        (~qc["R1_exists"]).sum() + (~qc["R2_exists"]).sum()
-    )
-
-    sample_sheet_summary["unreadable_fastqs"] = int(
-        # Files that existed but could not be opened/parsed
-        (qc["R1_readable"] == False).sum() 
-        + (qc["R2_readable"] == False).sum()
-    )
-
-    sample_sheet_summary["status"] = (
-        "PASS"
-        if (
-            sample_sheet_summary["duplicate_R1_files"] == 0
-            and sample_sheet_summary["duplicate_R2_files"] ==0
-            and sample_sheet_summary["missing_files"] == 0
-            and sample_sheet_summary["unreadable_fastqs"] == 0
-            )
-        else "FAIL"
-        
-    )
-
-    return sample_sheet_summary, sample_summary, qc
+    return overall_summary, sample_summary, qc
 
 if __name__ == "__main__":
     args = parse_arguments(
         samples_file="mandatory",
     )
 
-    sample_sheet_summary , sample_summary, lane_qc = run_qc(args.samples_file)
+    overall_summary, sample_summary, file_qc = run_qc(args.samples)
 
     output_file = Path(args.samples_file).parent / "input_qc_report.txt"
 
     with open(output_file, "w") as report:
-        report.write("Sample Sheet Summary:\n")
+        report.write("INPUT FASTQ QC REPORT\n")
         report.write("=====================\n")
-        for key,value in sample_sheet_summary.items():
-            report.write(f"{key}: {value}\n")
+        report.write(f"Sample sheet: {args.samples_file}\n")
+        report.write(f"Reads sampled per file: up to {MAX_READS}\n")
+
+        report.write("\nFILE DETAILS\n")
+        report.write("------------\n")
+
+        columns = [
+            "sample",
+            "read_direction",
+            "path",
+            "size_mb",
+            "reads_checked",
+            "mean_length",
+            "min_length",
+            "max_length",
+            "status",
+            "error",
+        ]
+
+        report.write(
+            file_qc[columns].to_string(
+                index=False,
+                na_rep="-",
+                formatters={
+                    "size_mb": "{:.6f}".format,
+                    "mean_length": "{:.1f}".format,
+                },
+            )
+        )
+        report.write("\n")
+
+        report.write("\nSAMPLE SUMMARY\n")
+        report.write("--------------\n")
+
+        columns = [
+            "sample",
+            "paired_end",
+            "n_files",
+            "total_size_mb",
+            "status",
+        ]
+        report.write(
+            sample_summary[columns].to_string(index=False)
+        )
+
+        report.write("\n\nOVERALL QC\n")
+        report.write("----------\n")
+        report.write(f"Samples checked : {overall_summary['n_samples']}\n")
+        report.write(f"Files checked   : {overall_summary['n_files']}\n")
+        report.write(f"Failed files    : {overall_summary['failed_files']}\n")
+
+        duplicates = overall_summary["duplicate_paths"]
+        report.write(f"Duplicate paths : {len(duplicates)}\n")
+
+        for path in duplicates:
+            report.writelines(f"  - {path}\n")
+
+        report.write(f"\nRESULT: {overall_summary['status']}\n"
+        )    
         
-        report.write("\nSample-level QC:\n")
-        report.write("=================\n")
-        report.write(sample_summary.to_string(index=False))
-
-        report.write("\n\nLane-Level QC\n")
-        report.write("================\n")
-        report.write(lane_qc.to_string(index=False))
-
     print(f"QC report written to {output_file}")
