@@ -76,10 +76,15 @@ workflow {
         }
 
     samples = samples.branch { it -> 
-        already_preprocessed: params.resume_from_output && file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads").isDirectory()
+        already_preprocessed: params.resume_from_output && it[0].single_end 
+            ? file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered.fastq.gz").exists()
+            : file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_1.fastq.gz").exists()
+              && file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_unmerged_2.fastq.gz").exists()
+              && file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_merged.fastq.gz").exists()
+              && file("${outdir_ppr_abs}/${it[0].id}/preprocessed_reads/${it[0].id}_host_filtered_singletons.fastq.gz").exists()
         to_preprocess: true
     }
-
+    
     ///////////////////
     // PRE-PROCESSING //
     ///////////////////
