@@ -15,6 +15,8 @@ to [Common Changelog](https://common-changelog.org)
 - Parallelize and speed-up output merging script. ([#60](https://github.com/metagenlab/zshoman/pull/60) and [#62](https://github.com/metagenlab/zshoman/pull/62)) (Niklaus Johner)
 - Use merged gene abundance file for computing annotation abundances. [#66](https://github.com/metagenlab/zshoman/pull/66)) (Niklaus Johner)
 - Update mOTUs to version 4. [#67](https://github.com/metagenlab/zshoman/pull/67)) (Niklaus Johner)
+- Improve check for already preprocessed samples. [#79](https://github.com/metagenlab/zshoman/pull/79)) (Niklaus Johner)
+
 
 ### Added
 
